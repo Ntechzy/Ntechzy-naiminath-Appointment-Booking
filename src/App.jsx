@@ -1,5 +1,4 @@
 // src/App.jsx
-import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import BookingWrapper from "./components/BookingWrapper";
 import BookingDetailsPage from "./pages/BookingDetailsPage";
