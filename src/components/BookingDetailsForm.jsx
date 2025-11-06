@@ -1,8 +1,8 @@
 // src/pages/BookingDetailsForm.jsx
-import React from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import BookingSummaryPanel from "../components/BookingSummaryPanel"; // ✅ Reusable panel imported
+import ServiceInfo from "../components/ServiceInfo";
 
 const BookingDetailsForm = ({
   collegeName,
@@ -10,142 +10,161 @@ const BookingDetailsForm = ({
   selectedType,
   onSubmit,
 }) => {
+  const [selectedMode, setSelectedMode] = useState(selectedType || "");
+
   const formik = useFormik({
-    initialValues: { name: "", phone: "", email: "", notes: "" },
+    initialValues: { name: "", phone: "", email: "" },
     validationSchema: Yup.object({
       name: Yup.string()
         .matches(/^[A-Za-z ]+$/, "Only letters and spaces allowed")
         .min(3, "Please enter a valid full name")
         .required("Name is required"),
-
       phone: Yup.string()
-        .matches(
-          /^[6-9]\d{9}$/,
-          "Phone number must be a valid 10-digit Indian number starting with 6–9"
-        )
+        .matches(/^[6-9]\d{9}$/, "Must be a valid 10-digit Indian number")
         .required("Phone number is required"),
-
-      email: Yup.string()
-        .email("Enter a valid email")
-        .required("Email is required"),
+      email: Yup.string().email("Invalid Email").required("Email is required"),
     }),
-    onSubmit: (values) => onSubmit(values),
+    onSubmit: (values) => {
+      if (!selectedMode)
+        return alert("Please choose Online or Offline consultation");
+      onSubmit({ ...values, selectedType: selectedMode });
+    },
   });
 
-  // ✅ Prevent non-letters in Name input
-  const handleNameKeyDown = (e) => {
-    if (!/[a-zA-Z ]/.test(e.key) && e.key !== "Backspace" && e.key !== "Tab") {
-      e.preventDefault();
-    }
-  };
-
-  // ✅ Only digits & limit to 10
   const handlePhoneChange = (e) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 10) value = value.slice(0, 10);
-    formik.setFieldValue("phone", value);
+    let val = e.target.value.replace(/\D/g, "");
+    if (val.length > 10) val = val.slice(0, 10);
+    formik.setFieldValue("phone", val);
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto mt-6 px-4 sm:px-6 lg:px-0 min-h-screen">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col lg:flex-row overflow-hidden">
+    <div className="w-full max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-0">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 shadow-lg flex flex-col lg:flex-row gap-0 overflow-hidden">
 
-        {/* ✅ Reusable Left Panel */}
-        <BookingSummaryPanel
-          collegeName={collegeName}
-          selectedSlot={selectedSlot}
-          selectedType={selectedType}
-        />
+        {/* ✅ Left Service Info Panel */}
+        <div className="lg:w-[40%] min-w-[280px] border-r border-gray-200 bg-white">
+          <ServiceInfo />
+        </div>
 
-        {/* RIGHT FORM PANEL */}
-        <div className="lg:w-3/5 p-6 sm:p-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Enter Details
+        {/* ✅ Right Form Section */}
+        <div className="lg:flex-1 p-8 bg-linear-to-br from-white to-gray-50 flex flex-col justify-start">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Your Basic Details
           </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Please fill your details carefully
+          </p>
 
-          <form onSubmit={formik.handleSubmit} className="space-y-6 mt-6">
-
-            {/* NAME */}
+          <form onSubmit={formik.handleSubmit} className="mt-6 space-y-6">
+            
+            {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
-                Name *
+              <label className="text-sm font-medium text-gray-800">
+                Full Name *
               </label>
               <input
-                id="name"
                 name="name"
                 value={formik.values.name}
                 onChange={formik.handleChange}
-                onKeyDown={handleNameKeyDown}
                 onBlur={formik.handleBlur}
+                className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${
+                  formik.touched.name && formik.errors.name
+                    ? "border-red-400 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-blue-500"
+                }`}
                 placeholder="Enter your full name"
-                className={`w-full border rounded-md px-4 py-3 focus:ring-2 transition
-                  ${
-                    formik.touched.name && formik.errors.name
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-blue-500"
-                  }`}
               />
               {formik.touched.name && formik.errors.name && (
-                <p className="mt-1 text-xs text-red-600">{formik.errors.name}</p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.name}</p>
               )}
             </div>
 
-            {/* PHONE */}
+            {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
-                Phone Number *
+              <label className="text-sm font-medium text-gray-800">
+                Mobile Number *
               </label>
-              <div className="flex items-center border border-gray-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                <span className="bg-gray-100 text-gray-700 px-4 py-3 text-sm font-medium border-r border-gray-300">
+              <div className="mt-1 flex items-center rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                <span className="px-4 py-3 bg-gray-100 border-r text-gray-700 text-sm font-medium">
                   +91
                 </span>
                 <input
-                  id="phone"
                   name="phone"
-                  type="tel"
                   value={formik.values.phone}
                   onChange={handlePhoneChange}
                   onBlur={formik.handleBlur}
-                  placeholder="10-digit mobile number"
-                  className="flex-1 px-4 py-3 outline-none"
+                  maxLength="10"
+                  className="flex-1 px-4 py-3 text-sm outline-none"
+                  placeholder="10-digit number"
                 />
               </div>
               {formik.touched.phone && formik.errors.phone && (
-                <p className="mt-1 text-xs text-red-600">{formik.errors.phone}</p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.phone}</p>
               )}
             </div>
 
-            {/* EMAIL */}
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
-                Email *
+              <label className="text-sm font-medium text-gray-800">
+                Email Address *
               </label>
               <input
-                id="email"
                 name="email"
                 type="email"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                placeholder="example@email.com"
-                className={`w-full border rounded-md px-4 py-3 focus:ring-2 transition
-                  ${
-                    formik.touched.email && formik.errors.email
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-blue-500"
-                  }`}
+                className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${
+                  formik.touched.email && formik.errors.email
+                    ? "border-red-400 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-blue-500"
+                }`}
+                placeholder="example@mail.com"
               />
               {formik.touched.email && formik.errors.email && (
-                <p className="mt-1 text-xs text-red-600">{formik.errors.email}</p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.email}</p>
               )}
             </div>
 
-            {/* CTA BUTTON */}
+            {/* ✅ Consultation Mode with Separator */}
+            <div>
+              <p className="text-sm font-medium text-gray-800 mb-2">
+                Consultation Mode *
+              </p>
+
+              <div className="flex rounded-lg overflow-hidden border border-gray-300">
+                <button
+                  type="button"
+                  onClick={() => setSelectedMode("Online")}
+                  className={`w-1/2 py-3 text-sm font-semibold transition border-r border-gray-300 ${
+                    selectedMode === "Online"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Online
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedMode("Offline")}
+                  className={`w-1/2 py-3 text-sm font-semibold transition ${
+                    selectedMode === "Offline"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Offline
+                </button>
+              </div>
+            </div>
+
+            {/* Continue Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition"
+              className="w-full py-3 rounded-lg text-white font-medium bg-blue-600 hover:bg-blue-700 transition shadow-md"
             >
-              Continue
+              Continue →
             </button>
 
           </form>

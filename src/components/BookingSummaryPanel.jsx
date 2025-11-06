@@ -1,7 +1,7 @@
 // src/components/BookingSummaryPanel.jsx
 import React from "react";
 
-const BookingSummaryPanel = ({ collegeName, selectedSlot, selectedType }) => {
+const BookingSummaryPanel = ({ collegeName, selectedSlot, selectedType="Offline" }) => {
   return (
     <div className="p-6 sm:p-8 bg-gray-50 h-[70vh]">
       <div className="space-y-6">

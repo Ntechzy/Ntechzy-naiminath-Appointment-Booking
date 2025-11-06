@@ -2,8 +2,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import BackButton from "../components/BackButton";
-import BookingSummaryPanel from "../components/BookingSummaryPanel";
 import CompleteCaseForm from "../components/caseForm/CompleteCaseForm";
+import BookingSummaryStaticPanel from "../components/BookingSummaryStaticPanel";
 
 export default function OnlineDetailsPage() {
   const { state } = useLocation();
@@ -25,13 +25,10 @@ export default function OnlineDetailsPage() {
 
       {/* Wrapper Container */}
       <div className="max-w-6xl mx-auto bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col lg:flex-row overflow-hidden">
-
         {/* Left: Summary */}
-        <BookingSummaryPanel
-          collegeName={state.collegeName}
-          selectedSlot={state.selectedSlot}
-          selectedType={state.selectedType}
-        />
+        <div className="w-100">
+          <BookingSummaryStaticPanel />
+        </div>
 
         {/* Right: Card with Button */}
         <div className="lg:w-3/5 p-6 sm:p-8 flex items-center justify-center">
@@ -66,7 +63,6 @@ export default function OnlineDetailsPage() {
         <div className="fixed inset-0 z-9999 flex items-center justify-center backdrop-blur-sm bg-black/40">
           {/* MODAL BOX WITH INTERNAL SCROLL */}
           <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full mx-4 p-6 relative max-h-[90vh] overflow-y-auto">
-
             {/* Close Button */}
             <button
               onClick={() => setShowModal(false)}
@@ -88,7 +84,6 @@ export default function OnlineDetailsPage() {
                 Done
               </button>
             </div>
-
           </div>
         </div>
       )}

@@ -8,38 +8,35 @@ const BookingDetailsPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  if (!state)
-    return <div className="p-8 text-center">No booking selected.</div>;
+  // If coming directly to homepage — do not show "No booking selected"
+  // Instead, allow form to work standalone by providing fallback empty state
+  const bookingState = state || { collegeName: "", selectedSlot: "", selectedType: "" };
 
   const handleSubmit = (formData) => {
-    const payload = { ...state, userDetails: formData };
+    const payload = { ...bookingState, userDetails: formData };
 
-    if (state.selectedType === "Online") {
+    // ✅ Use the mode selected in the form
+    if (formData.selectedType === "Online") {
       navigate("/online-details", { state: payload });
     } else {
-      navigate("/offline-details", { state: payload });
+      navigate("/booking-wrapper", { state: payload });
     }
   };
 
   return (
-  <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-10">
-    
-    {/* Back Button */}
-    <div className="mb-6">
-      <BackButton />
-    </div>
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-10">
 
-    {/* Centered Form */}
-    <div className="flex justify-center">
-      <BookingDetailsForm
-        collegeName={state.collegeName}
-        selectedSlot={state.selectedSlot}
-        selectedType={state.selectedType}
-        onSubmit={handleSubmit}
-      />
+      {/* Centered Form */}
+      <div className="flex justify-center">
+        <BookingDetailsForm
+          collegeName={bookingState.collegeName}
+          selectedSlot={bookingState.selectedSlot}
+          selectedType={bookingState.selectedType}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default BookingDetailsPage;

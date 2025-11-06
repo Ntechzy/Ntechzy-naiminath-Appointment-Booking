@@ -93,7 +93,7 @@ export default function ConfirmationPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 font-medium">Consultation Type</p>
-                    <p className="text-lg font-semibold text-gray-900 capitalize">{state?.selectedType || "Online"} Consultation</p>
+                    <p className="text-lg font-semibold text-gray-900 capitalize">{"Offline"} Consultation</p>
                   </div>
                 </div>
               </div>
