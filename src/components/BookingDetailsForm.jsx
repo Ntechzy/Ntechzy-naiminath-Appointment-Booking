@@ -12,21 +12,58 @@ const BookingDetailsForm = ({
 }) => {
   const [selectedMode, setSelectedMode] = useState(selectedType || "");
 
+  // Bilingual text configuration
+  const translations = {
+    // Page Titles & Headers
+    yourBasicDetails: "Your Basic Details / आपका बुनियादी विवरण",
+    pleaseFillDetails: "Please fill your details carefully / कृपया अपना विवरण ध्यान से भरें",
+    
+    // Form Labels
+    fullName: "Full Name * / पूरा नाम *",
+    mobileNumber: "Mobile Number * / मोबाइल नंबर *",
+    emailAddress: "Email Address (Optional) / ईमेल पता (वैकल्पिक)",
+    consultationMode: "Consultation Mode * / परामर्श का तरीका *",
+    
+    // Placeholders
+    enterFullName: "Enter your full name / अपना पूरा नाम दर्ज करें",
+    tenDigitNumber: "10-digit number / 10-अंकीय नंबर",
+    emailPlaceholder: "example@mail.com / उदाहरण@मेल.कॉम",
+    
+    // Buttons
+    online: "Online / ऑनलाइन",
+    offline: "Offline / ऑफलाइन",
+    continue: "Continue → / जारी रखें →",
+    
+    // Validation Messages
+    onlyLettersSpaces: "Only letters and spaces allowed / केवल अक्षर और रिक्त स्थान अनुमत हैं",
+    validFullName: "Please enter a valid full name / कृपया एक वैध पूरा नाम दर्ज करें",
+    nameRequired: "Name is required / नाम आवश्यक है",
+    validIndianNumber: "Must be a valid 10-digit Indian number / एक वैध 10-अंकीय भारतीय नंबर होना चाहिए",
+    phoneRequired: "Phone number is required / फोन नंबर आवश्यक है",
+    invalidEmail: "Invalid Email / अमान्य ईमेल",
+    
+    // Alerts & Messages
+    chooseConsultation: "Please choose Online or Offline consultation / कृपया ऑनलाइन या ऑफलाइन परामर्श चुनें",
+    
+    // Service Info Text (you can replace this with actual bilingual content)
+    serviceText: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse egestas sapien non justo tincidunt, non semper magna vestibulum. Donec lacinia, odio quis bibendum tincidunt, mi augue facilisis risus, atsodales dui nulla vel sapien."
+  };
+
   const formik = useFormik({
     initialValues: { name: "", phone: "", email: "" },
     validationSchema: Yup.object({
       name: Yup.string()
-        .matches(/^[A-Za-z ]+$/, "Only letters and spaces allowed")
-        .min(3, "Please enter a valid full name")
-        .required("Name is required"),
+        .matches(/^[A-Za-z ]+$/, translations.onlyLettersSpaces)
+        .min(3, translations.validFullName)
+        .required(translations.nameRequired),
       phone: Yup.string()
-        .matches(/^[6-9]\d{9}$/, "Must be a valid 10-digit Indian number")
-        .required("Phone number is required"),
-      email: Yup.string().email("Invalid Email").required("Email is required"),
+        .matches(/^[6-9]\d{9}$/, translations.validIndianNumber)
+        .required(translations.phoneRequired),
+      email: Yup.string().email(translations.invalidEmail).notRequired(),
     }),
     onSubmit: (values) => {
       if (!selectedMode)
-        return alert("Please choose Online or Offline consultation");
+        return alert(translations.chooseConsultation);
       onSubmit({ ...values, selectedType: selectedMode });
     },
   });
@@ -43,26 +80,24 @@ const BookingDetailsForm = ({
         {/* ✅ Left Service Info Panel */}
         <div className="lg:w-[40%] min-w-[280px] border-r border-gray-200 bg-white">
           <ServiceInfo
-            textData={
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse egestas sapien non justo tincidunt, non semper magna vestibulum. Donec lacinia, odio quis bibendum tincidunt, mi augue facilisis risus, atsodales dui nulla vel sapien.sodales dui nulla vel sapien.sodales duinulla vel sapien.sodales dui nulla vel sapien.sodales dui nulla velsapien.sodales dui nulla vel sapien.sodales dui nulla vel sapien."
-            }
+            textData={translations.serviceText}
           />
         </div>
 
         {/* ✅ Right Form Section */}
         <div className="lg:flex-1 p-8 bg-linear-to-br from-white to-gray-50 flex flex-col justify-start">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Your Basic Details
+            {translations.yourBasicDetails}
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Please fill your details carefully
+            {translations.pleaseFillDetails}
           </p>
 
           <form onSubmit={formik.handleSubmit} className="mt-6 space-y-6">
             {/* Name */}
             <div>
               <label className="text-sm font-medium text-gray-800">
-                Full Name *
+                {translations.fullName}
               </label>
               <input
                 name="name"
@@ -74,7 +109,7 @@ const BookingDetailsForm = ({
                     ? "border-red-400 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
                 }`}
-                placeholder="Enter your full name"
+                placeholder={translations.enterFullName}
               />
               {formik.touched.name && formik.errors.name && (
                 <p className="text-xs text-red-500 mt-1">
@@ -86,7 +121,7 @@ const BookingDetailsForm = ({
             {/* Phone */}
             <div>
               <label className="text-sm font-medium text-gray-800">
-                Mobile Number *
+                {translations.mobileNumber}
               </label>
               <div className="mt-1 flex items-center rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
                 <span className="px-4 py-3 bg-gray-100 border-r text-gray-700 text-sm font-medium">
@@ -99,7 +134,7 @@ const BookingDetailsForm = ({
                   onBlur={formik.handleBlur}
                   maxLength="10"
                   className="flex-1 px-4 py-3 text-sm outline-none"
-                  placeholder="10-digit number"
+                  placeholder={translations.tenDigitNumber}
                 />
               </div>
               {formik.touched.phone && formik.errors.phone && (
@@ -109,10 +144,10 @@ const BookingDetailsForm = ({
               )}
             </div>
 
-            {/* Email */}
+            {/* Email (Optional) */}
             <div>
               <label className="text-sm font-medium text-gray-800">
-                Email Address *
+                {translations.emailAddress}
               </label>
               <input
                 name="email"
@@ -125,7 +160,7 @@ const BookingDetailsForm = ({
                     ? "border-red-400 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
                 }`}
-                placeholder="example@mail.com"
+                placeholder={translations.emailPlaceholder}
               />
               {formik.touched.email && formik.errors.email && (
                 <p className="text-xs text-red-500 mt-1">
@@ -137,7 +172,7 @@ const BookingDetailsForm = ({
             {/* ✅ Consultation Mode with Separator */}
             <div>
               <p className="text-sm font-medium text-gray-800 mb-2">
-                Consultation Mode *
+                {translations.consultationMode}
               </p>
 
               <div className="flex rounded-lg overflow-hidden border border-gray-300">
@@ -150,7 +185,7 @@ const BookingDetailsForm = ({
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  Online
+                  {translations.online}
                 </button>
 
                 <button
@@ -162,7 +197,7 @@ const BookingDetailsForm = ({
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  Offline
+                  {translations.offline}
                 </button>
               </div>
             </div>
@@ -172,7 +207,7 @@ const BookingDetailsForm = ({
               type="submit"
               className="w-full py-3 rounded-lg text-white font-medium bg-blue-600 hover:bg-blue-700 transition shadow-md"
             >
-              Continue →
+              {translations.continue}
             </button>
           </form>
         </div>

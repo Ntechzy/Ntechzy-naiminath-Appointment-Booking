@@ -12,11 +12,29 @@ export default function OnlineDetailsPage() {
   const [isFormComplete, setIsFormComplete] = useState(false);
   const [formData, setFormData] = useState(null);
 
-  if (!state) return <div className="p-8 text-center">No data found.</div>;
+  // Bilingual text configuration
+  const translations = {
+    noDataFound: "No data found. / कोई डेटा नहीं मिला।",
+    completeCaseInfo: "Complete Case Information / पूर्ण केस जानकारी",
+    provideCaseDetails: "Please provide your case details before continuing. / कृपया जारी रखने से पहले अपनी केस जानकारी प्रदान करें।",
+    fillCaseForm: "Fill Case Form / केस फॉर्म भरें",
+    viewEditCaseForm: "View/Edit Case Form / केस फॉर्म देखें/संपादित करें",
+    caseFormCompleted: "✓ Case form completed / ✓ केस फॉर्म पूरा हो गया",
+    caseFormNotCompleted: "Case form not completed / केस फॉर्म पूरा नहीं हुआ",
+    continueToPayment: "Continue to Payment / भुगतान पर जारी रखें",
+    completeFormToContinue: "Complete Form to Continue / जारी रखने के लिए फॉर्म पूरा करें",
+    pleaseCompleteForm: "Please complete the case form before proceeding to payment. / कृपया भुगतान के लिए आगे बढ़ने से पहले केस फॉर्म पूरा करें।"
+  };
+
+  if (!state) return (
+    <div className="p-8 text-center">
+      {translations.noDataFound}
+    </div>
+  );
 
   const handleNext = () => {
     if (!isFormComplete) {
-      alert("Please complete the case form before proceeding to payment.");
+      alert(translations.pleaseCompleteForm);
       return;
     }
     navigate("/payment", { state: { ...state, formData } });
@@ -50,23 +68,23 @@ export default function OnlineDetailsPage() {
         <div className="lg:w-3/5 p-6 sm:p-8 flex items-center justify-center">
           <div className="bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-6 text-center max-w-sm w-full">
             <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Complete Case Information
+              {translations.completeCaseInfo}
             </h2>
             <p className="text-sm text-gray-600 mb-6">
-              Please provide your case details before continuing.
+              {translations.provideCaseDetails}
             </p>
 
             <button
               onClick={() => setShowModal(true)}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-md transition"
             >
-              {isFormComplete ? 'View/Edit Case Form' : 'Fill Case Form'}
+              {isFormComplete ? translations.viewEditCaseForm : translations.fillCaseForm}
             </button>
 
             {/* Form Completion Status */}
             <div className="mt-4 p-3 rounded-md bg-gray-100">
               <p className={`text-sm font-medium ${isFormComplete ? 'text-green-600' : 'text-yellow-600'}`}>
-                {isFormComplete ? '✓ Case form completed' : 'Case form not completed'}
+                {isFormComplete ? translations.caseFormCompleted : translations.caseFormNotCompleted}
               </p>
             </div>
 
@@ -80,7 +98,7 @@ export default function OnlineDetailsPage() {
                   : 'border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-100'
               }`}
             >
-              {isFormComplete ? 'Continue to Payment' : 'Complete Form to Continue'}
+              {isFormComplete ? translations.continueToPayment : translations.completeFormToContinue}
             </button>
           </div>
         </div>
