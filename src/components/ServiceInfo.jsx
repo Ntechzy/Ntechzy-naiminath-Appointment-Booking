@@ -2,7 +2,7 @@
 import React from "react";
 import hospitalLogo from "/logo2.png";
 
-const ServiceInfo = ({ textData }) => {
+const ServiceInfo = ({ textData ,height="h-full" }) => {
   // Bilingual text configuration
   const translations = {
     hospitalName: "Naiminath Homoeopathic Hospital ",
@@ -18,9 +18,9 @@ const ServiceInfo = ({ textData }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 h-full  md:h-[73vh] flex flex-col overflow-hidden">
+    <div className={`bg-white rounded-lg shadow-sm p-6 h-full flex flex-col ${height} overflow-hidden`}>
       {/* Header Section */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-2">
         <img
           src={hospitalLogo}
           alt="Naiminath Hospital Logo / नैमिनाथ अस्पताल लोगो"
@@ -120,7 +120,7 @@ const ServiceInfo = ({ textData }) => {
       <div className="border-t border-gray-200 pt-4 mt-5 text-sm">
         <p className="font-medium text-gray-900 mb-2">{translations.needHelp}</p>
         <p className="text-gray-600">{translations.call} +91 98765 43210</p>
-        <p className="text-gray-600">{translations.email} support@naiminathhospital.com</p>
+        <p className="text-gray-600 mt-1">{translations.email} support@naiminathhospital.com</p>
       </div>
     </div>
   );

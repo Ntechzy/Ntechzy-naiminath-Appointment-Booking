@@ -86,7 +86,7 @@ const BookingDetailsForm = ({ collegeName, selectedSlot, selectedType, onSubmit 
       <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 shadow-lg flex flex-col lg:flex-row overflow-hidden">
         {/* ✅ Left Section */}
         <div className="w-full lg:w-[40%] border-b lg:border-b-0 lg:border-r border-gray-200 bg-white">
-          <ServiceInfo textData={translations.serviceText} />
+          <ServiceInfo textData={translations.serviceText}  height="md:h-[50vh]"/>
         </div>
 
         {/* ✅ Right Section */}
