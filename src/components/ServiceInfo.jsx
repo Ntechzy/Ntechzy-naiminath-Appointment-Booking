@@ -18,7 +18,7 @@ const ServiceInfo = ({ textData ,height="h-full" }) => {
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-6 h-full flex flex-col ${height} overflow-hidden`}>
+    <div className={`bg-white rounded-lg p-6 h-full flex flex-col ${height} overflow-hidden`}>
       {/* Header Section */}
       <div className="flex items-center gap-4 mb-2">
         <img
