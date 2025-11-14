@@ -10,7 +10,7 @@ export const appointments = [
   },
   {
     id: 2,
-    name: "Tanya Kapoor",
+    name: "Tanya Kapooor",
     phone: "9876512345",
     email: "tanya.kapoor@example.com",
     date: "2024-01-15",
