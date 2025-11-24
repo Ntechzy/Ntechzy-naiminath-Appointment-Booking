@@ -1,70 +1,176 @@
 // src/pages/BookingDetailsForm.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { useSelector, useDispatch } from "react-redux";
 import ServiceInfo from "../components/ServiceInfo";
+import { useCreateUserMutation, useUpdateUserMutation, useGetUserQuery } from "../store/api/userApi";
+import { storeUserIdForFuture, getStoredUserId, setUserData } from "../store/slices/userSlice";
 
-const BookingDetailsForm = ({
-  collegeName,
-  selectedSlot,
-  selectedType,
-  onSubmit,
-}) => {
+const BookingDetailsForm = ({ collegeName, selectedSlot, selectedType, onSubmit }) => {
   const [selectedMode, setSelectedMode] = useState(selectedType || "");
+  const [serverErrors, setServerErrors] = useState([]);
+  const dispatch = useDispatch();
+  
+  // Get user data from Redux store
+  const { userId, userData } = useSelector((state) => state.user);
 
-  // Bilingual text configuration
+  // RTK Query hooks
+  const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  
+  // Fetch user data if userId exists
+  const { data: fetchedUserData, isLoading: isUserLoading } = useGetUserQuery(userId, {
+    skip: !userId, // Skip if no userId
+  });
+
   const translations = {
-    // Page Titles & Headers
     yourBasicDetails: "Your Basic Details / आपका बुनियादी विवरण",
     pleaseFillDetails: "Please fill your details carefully / कृपया अपना विवरण ध्यान से भरें",
-    
-    // Form Labels
     fullName: "Full Name * / पूरा नाम *",
     mobileNumber: "Mobile Number * / मोबाइल नंबर *",
     emailAddress: "Email Address (Optional) / ईमेल पता (वैकल्पिक)",
     consultationMode: "Consultation Mode * / परामर्श का तरीका *",
-    
-    // Placeholders
     enterFullName: "Enter your full name / अपना पूरा नाम दर्ज करें",
     tenDigitNumber: "10-digit number / 10-अंकीय नंबर",
     emailPlaceholder: "example@mail.com / उदाहरण@मेल.कॉम",
-    
-    // Buttons
     online: "Online / ऑनलाइन",
     offline: "Offline / ऑफलाइन",
     continue: "Continue → / जारी रखें →",
-    
-    // Validation Messages
     onlyLettersSpaces: "Only letters and spaces allowed / केवल अक्षर और रिक्त स्थान अनुमत हैं",
-    validFullName: "Please enter a valid full name / कृपया एक वैध पूरा नाम दर्ज करें",
+    validFullName: "Full name must be between 2 and 100 characters / पूरा नाम 2 से 100 अक्षरों के बीच होना चाहिए",
     nameRequired: "Name is required / नाम आवश्यक है",
     validIndianNumber: "Must be a valid 10-digit Indian number / एक वैध 10-अंकीय भारतीय नंबर होना चाहिए",
     phoneRequired: "Phone number is required / फोन नंबर आवश्यक है",
-    invalidEmail: "Invalid Email / अमान्य ईमेल",
-    
-    // Alerts & Messages
+    invalidEmail: "Please provide a valid email / कृपया एक वैध ईमेल प्रदान करें",
     chooseConsultation: "Please choose Online or Offline consultation / कृपया ऑनलाइन या ऑफलाइन परामर्श चुनें",
+    verifyingDetails: "Verifying your details... / आपका विवरण सत्यापित किया जा रहा है...",
+    creatingUser: "Creating booking... / बुकिंग बनाई जा रही है...",
+    updatingUser: "Updating booking... / बुकिंग अपडेट की जा रही है...",
+    loadingUser: "Loading user data... / उपयोगकर्ता डेटा लोड हो रहा है...",
     
-    // Service Info Text (you can replace this with actual bilingual content)
-    serviceText: "Naiminath Homoeopathic Hospital provides natural healing through classical homeopathy. Expert physicians offer personalized treatments for acute and chronic conditions using safe, gentle remedies. / नैमिनाथ होम्योपैथिक अस्पताल शास्त्रीय होम्योपैथी के माध्यम से प्राकृतिक उपचार प्रदान करता है। विशेषज्ञ चिकित्सक सुरक्षित, सौम्य उपचारों का उपयोग करके तीव्र और पुरानी स्थितियों के लिए व्यक्तिगत उपचार प्रदान करते हैं।"
+    serviceText: "Naiminath Homoeopathic Hospital provides natural healing through classical homeopathy. Expert physicians offer personalized treatments for acute and chronic conditions using safe, gentle remedies. / नैमिनाथ होम्योपैथिक अस्पताल शास्त्रीय होम्योपैथी के माध्यम से प्राकृतिक उपचार प्रदान करता है। विशेषज्ञ चिकित्सक सुरक्षित, सौम्य उपचारों का उपयोग करके तीव्र और पुरानी स्थितियों के लिए व्यक्तिगत उपचार प्रदान करते हैं।",
+    newAppointment: "New Appointment / नया अपॉइंटमेंट",
+    updateAppointment: "Update Appointment / अपॉइंटमेंट अपडेट करें",
   };
 
+  // Check for stored user ID on component mount
+  useEffect(() => {
+    dispatch(getStoredUserId());
+  }, [dispatch]);
+
+  // Pre-fill form when user data is loaded
+  useEffect(() => {
+    if (fetchedUserData?.success && fetchedUserData.data?.user) {
+      const user = fetchedUserData.data.user;
+      formik.setValues({
+        name: user.fullName || "",
+        phone: user.mobile || "",
+        email: user.email || "",
+      });
+      setSelectedMode(user.mode || "");
+      dispatch(setUserData(user));
+    }
+  }, [fetchedUserData, dispatch]);
+
   const formik = useFormik({
-    initialValues: { name: "", phone: "", email: "" },
+    initialValues: { 
+      name: "", 
+      phone: "", 
+      email: "" 
+    },
     validationSchema: Yup.object({
       name: Yup.string()
-        .matches(/^[A-Za-z ]+$/, translations.onlyLettersSpaces)
-        .min(3, translations.validFullName)
+        .matches(/^[A-Za-z\s]+$/, translations.onlyLettersSpaces)
+        .min(2, translations.validFullName)
+        .max(100, translations.validFullName)
         .required(translations.nameRequired),
       phone: Yup.string()
         .matches(/^[6-9]\d{9}$/, translations.validIndianNumber)
         .required(translations.phoneRequired),
-      email: Yup.string().email(translations.invalidEmail).notRequired(),
+      email: Yup.string()
+        .email(translations.invalidEmail)
+        .notRequired()
+        .nullable()
+        .transform((value) => value === '' ? null : value),
     }),
-    onSubmit: (values) => {
-      if (!selectedMode)
-        return alert(translations.chooseConsultation);
-      onSubmit({ ...values, selectedType: selectedMode });
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        // Clear previous server errors
+        setServerErrors([]);
+
+        // Prepare data according to backend validation
+        const userPayload = {
+          fullName: values.name.trim(),
+          mobile: values.phone,
+          mode: selectedMode.toLowerCase(), // Convert to lowercase for backend validation
+          isBookingDone: false
+        };
+
+        // Only add email if provided (optional field)
+        if (values.email && values.email.trim()) {
+          userPayload.email = values.email.trim();
+        }
+
+        console.log('Sending payload:', userPayload);
+
+        let result;
+
+        if (userId) {
+          // Update existing user
+          result = await updateUser({ 
+            id: userId, 
+            ...userPayload 
+          }).unwrap();
+        } else {
+          // Create new user
+          result = await createUser(userPayload).unwrap();
+          
+          if (result.success && result.data?.user?._id) {
+            const newUserId = result.data.user._id;
+            
+            // Store the user ID for future use using the separate function
+            dispatch(storeUserIdForFuture(newUserId));
+            
+            // Also store the complete user data
+            dispatch(setUserData(result.data.user));
+            
+            console.log('User created and ID stored:', newUserId);
+          }
+        }
+
+        if (result.success) {
+          // Pass the complete user data to parent component
+          onSubmit({ 
+            ...values, 
+            selectedType: selectedMode,
+            user: result.data.user,
+            userId: result.data.user._id
+          });
+        }
+      } catch (error) {
+        console.error('API Error:', error);
+        
+        // Handle validation errors from server
+        if (error.status === 400 && error.data?.errors) {
+          setServerErrors(error.data.errors);
+          let errorMessage = 'Please fix the following errors:\n' + 
+            error.data.errors.map(err => `• ${err.msg || err.message}`).join('\n');
+          alert(errorMessage);
+        } else {
+          let errorMessage = 'Failed to process booking. Please try again.';
+          
+          if (error.data?.message) {
+            errorMessage = error.data.message;
+          } else if (error.status === 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+          
+          alert(errorMessage);
+        }
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
@@ -74,26 +180,60 @@ const BookingDetailsForm = ({
     formik.setFieldValue("phone", val);
   };
 
+  const isLoading = isCreating || isUpdating || formik.isSubmitting || isUserLoading;
+
   return (
-    <div className="w-full max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-0">
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 shadow-lg flex flex-col lg:flex-row gap-0 overflow-hidden">
-        {/* ✅ Left Service Info Panel */}
-        <div className="lg:w-[40%] min-w-[280px] border-r border-gray-200 bg-white">
-          <ServiceInfo
-            textData={translations.serviceText}
-          />
+    <div className="w-full max-w-6xl mx-auto py-6 px-3 sm:px-6 lg:px-8">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 shadow-lg flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Section */}
+        <div className="w-full lg:w-[40%] border-b lg:border-b-0 lg:border-r border-gray-200 bg-white">
+          <ServiceInfo textData={translations.serviceText} height="md:h-full" />
         </div>
 
-        {/* ✅ Right Form Section */}
-        <div className="lg:flex-1 p-8 bg-linear-to-br from-white to-gray-50 flex flex-col justify-start">
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+        {/* Right Section */}
+        <div className="w-full lg:flex-1 p-6 sm:p-8 bg-linear-to-br from-white to-gray-50 flex flex-col justify-start">
+          {/* Header */}
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
             {translations.yourBasicDetails}
           </h1>
           <p className="text-gray-500 text-sm mt-1">
             {translations.pleaseFillDetails}
           </p>
 
-          <form onSubmit={formik.handleSubmit} className="mt-6 space-y-6">
+          {/* Service Indicator */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-blue-800">
+                {userId ? translations.updateAppointment : translations.newAppointment}
+              </span>
+              {userId && (
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                  User ID: {userId}
+                </span>
+              )}
+              {isUserLoading && (
+                <span className="text-xs text-blue-600">
+                  {translations.loadingUser}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Server Errors Display */}
+          {serverErrors.length > 0 && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <h3 className="text-sm font-medium text-red-800 mb-2">
+                Please fix the following errors:
+              </h3>
+              <ul className="text-xs text-red-700 list-disc list-inside">
+                {serverErrors.map((error, index) => (
+                  <li key={index}>{error.msg || error.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <form onSubmit={formik.handleSubmit} className="mt-6 space-y-5">
             {/* Name */}
             <div>
               <label className="text-sm font-medium text-gray-800">
@@ -102,19 +242,24 @@ const BookingDetailsForm = ({
               <input
                 name="name"
                 value={formik.values.name}
-                onChange={formik.handleChange}
+                onChange={(e) => {
+                  formik.handleChange(e);
+                  // Clear server errors when user starts typing
+                  if (serverErrors.length > 0) {
+                    setServerErrors([]);
+                  }
+                }}
                 onBlur={formik.handleBlur}
+                disabled={isLoading}
                 className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${
                   formik.touched.name && formik.errors.name
                     ? "border-red-400 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
-                }`}
+                } ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder={translations.enterFullName}
               />
               {formik.touched.name && formik.errors.name && (
-                <p className="text-xs text-red-500 mt-1">
-                  {formik.errors.name}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.name}</p>
               )}
             </div>
 
@@ -123,28 +268,35 @@ const BookingDetailsForm = ({
               <label className="text-sm font-medium text-gray-800">
                 {translations.mobileNumber}
               </label>
-              <div className="mt-1 flex items-center rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                <span className="px-4 py-3 bg-gray-100 border-r text-gray-700 text-sm font-medium">
+              <div className={`mt-1 flex items-center rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 ${
+                isLoading ? 'bg-gray-100' : ''
+              }`}>
+                <span className="px-3 sm:px-4 py-3 bg-gray-100 border-r text-gray-700 text-sm font-medium">
                   +91
                 </span>
                 <input
                   name="phone"
                   value={formik.values.phone}
-                  onChange={handlePhoneChange}
+                  onChange={(e) => {
+                    handlePhoneChange(e);
+                    // Clear server errors when user starts typing
+                    if (serverErrors.length > 0) {
+                      setServerErrors([]);
+                    }
+                  }}
                   onBlur={formik.handleBlur}
                   maxLength="10"
-                  className="flex-1 px-4 py-3 text-sm outline-none"
+                  disabled={isLoading}
+                  className="flex-1 px-3 sm:px-4 py-3 text-sm outline-none bg-transparent"
                   placeholder={translations.tenDigitNumber}
                 />
               </div>
               {formik.touched.phone && formik.errors.phone && (
-                <p className="text-xs text-red-500 mt-1">
-                  {formik.errors.phone}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.phone}</p>
               )}
             </div>
 
-            {/* Email (Optional) */}
+            {/* Email */}
             <div>
               <label className="text-sm font-medium text-gray-800">
                 {translations.emailAddress}
@@ -153,61 +305,92 @@ const BookingDetailsForm = ({
                 name="email"
                 type="email"
                 value={formik.values.email}
-                onChange={formik.handleChange}
+                onChange={(e) => {
+                  formik.handleChange(e);
+                  // Clear server errors when user starts typing
+                  if (serverErrors.length > 0) {
+                    setServerErrors([]);
+                  }
+                }}
                 onBlur={formik.handleBlur}
+                disabled={isLoading}
                 className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${
                   formik.touched.email && formik.errors.email
                     ? "border-red-400 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
-                }`}
+                } ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder={translations.emailPlaceholder}
               />
               {formik.touched.email && formik.errors.email && (
-                <p className="text-xs text-red-500 mt-1">
-                  {formik.errors.email}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{formik.errors.email}</p>
               )}
             </div>
 
-            {/* ✅ Consultation Mode with Separator */}
+            {/* Consultation Mode */}
             <div>
               <p className="text-sm font-medium text-gray-800 mb-2">
                 {translations.consultationMode}
               </p>
-
-              <div className="flex rounded-lg overflow-hidden border border-gray-300">
+              <div className="flex flex-col sm:flex-row rounded-lg border border-gray-300 overflow-hidden">
                 <button
                   type="button"
-                  onClick={() => setSelectedMode("Online")}
-                  className={`w-1/2 py-3 text-sm font-semibold transition border-r border-gray-300 ${
+                  onClick={() => {
+                    setSelectedMode("Online");
+                    // Clear server errors when user selects mode
+                    if (serverErrors.length > 0) {
+                      setServerErrors([]);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className={`w-full sm:w-1/2 py-3 text-sm font-semibold transition border-b sm:border-b-0 sm:border-r border-gray-300 ${
                     selectedMode === "Online"
                       ? "bg-blue-600 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                  } ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   {translations.online}
                 </button>
-
                 <button
                   type="button"
-                  onClick={() => setSelectedMode("Offline")}
-                  className={`w-1/2 py-3 text-sm font-semibold transition ${
+                  onClick={() => {
+                    setSelectedMode("Offline");
+                    // Clear server errors when user selects mode
+                    if (serverErrors.length > 0) {
+                      setServerErrors([]);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className={`w-full sm:w-1/2 py-3 text-sm font-semibold transition ${
                     selectedMode === "Offline"
                       ? "bg-blue-600 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                  } ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   {translations.offline}
                 </button>
               </div>
+              {!selectedMode && formik.submitCount > 0 && (
+                <p className="text-xs text-red-500 mt-1">{translations.chooseConsultation}</p>
+              )}
             </div>
 
-            {/* Continue Button */}
+            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 rounded-lg text-white font-medium bg-blue-600 hover:bg-blue-700 transition shadow-md"
+              disabled={!selectedMode || isLoading}
+              className={`w-full py-3 rounded-lg text-white font-medium transition shadow-md mt-4 ${
+                !selectedMode || isLoading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
             >
-              {translations.continue}
+              {isLoading ? (
+                <span>
+                  {userId ? translations.updatingUser : translations.creatingUser}
+                </span>
+              ) : (
+                translations.continue
+              )}
             </button>
           </form>
         </div>
