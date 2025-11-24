@@ -1,4 +1,12 @@
+// src/components/CompleteCaseForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { 
+  submitOnlineAppointment,
+  setAppointmentSubmitted,
+  getStoredAppointmentData 
+} from '../store/slices/onlineAppointmentSlice';
+import { getStoredUserId } from '../store/slices/userSlice';
 
 const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externalIsFormComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -7,6 +15,10 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
   const totalSteps = 6;
+
+  const dispatch = useDispatch();
+  const { userId } = useSelector((state) => state.user);
+  const { isLoading, error, isSubmitted } = useSelector((state) => state.onlineAppointment);
 
   // Bilingual text configuration
   const translations = {
@@ -199,6 +211,12 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     digging: 'Digging / खोदने वाला',
     pinching: 'Pinching / चुटकी काटने वाला',
     throbbing: 'Throbbing / धड़कने वाला',
+
+    // API States
+    submittingForm: 'Submitting form... / फॉर्म सबमिट किया जा रहा है...',
+    submissionSuccess: 'Form submitted successfully! / फॉर्म सफलतापूर्वक सबमिट हो गया!',
+    submissionError: 'Failed to submit form. Please try again. / फॉर्म सबमिट करने में विफल। कृपया पुनः प्रयास करें।',
+    completePayment: 'Complete Payment / भुगतान पूरा करें',
   };
 
   // Updated form data structure to match backend schema
@@ -288,13 +306,13 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
   const transformToBackendFormat = (frontendData) => {
     // Transform anger reaction checkboxes to array
     const angerReactionArray = [];
-    if (frontendData.nature?.throwingThings) angerReactionArray.push('throwingThings');
-    if (frontendData.nature?.shouting) angerReactionArray.push('shouting');
-    if (frontendData.nature?.sittingAlone) angerReactionArray.push('sittingAlone');
-    if (frontendData.nature?.avoidingFood) angerReactionArray.push('avoidingFood');
-    if (frontendData.nature?.abusingFighting) angerReactionArray.push('abusingFighting');
-    if (frontendData.nature?.introverted) angerReactionArray.push('introverted');
-    if (frontendData.nature?.likesToBeAlone) angerReactionArray.push('likesToBeAlone');
+    if (frontendData.angerReaction?.throwingThings) angerReactionArray.push('throwingThings');
+    if (frontendData.angerReaction?.shouting) angerReactionArray.push('shouting');
+    if (frontendData.angerReaction?.sittingAlone) angerReactionArray.push('sittingAlone');
+    if (frontendData.angerReaction?.avoidingFood) angerReactionArray.push('avoidingFood');
+    if (frontendData.angerReaction?.abusingFighting) angerReactionArray.push('abusingFighting');
+    if (frontendData.angerReaction?.introverted) angerReactionArray.push('introverted');
+    if (frontendData.angerReaction?.likesToBeAlone) angerReactionArray.push('likesToBeAlone');
 
     // Transform stress factors checkboxes to array
     const stressFactorsArray = [];
@@ -305,27 +323,40 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
     // Transform symptoms checkboxes to array
     const symptomsArray = [];
-    Object.keys(frontendData.symptoms || {}).forEach(key => {
-      if (frontendData.symptoms[key] && key !== 'types') {
-        symptomsArray.push(key);
+    const symptomTypes = [
+      'aching', 'drawing', 'pressureInwards', 'biting', 'dull', 'pressureOutwards',
+      'boring', 'electric', 'pulsating', 'bruised', 'gripping', 'shooting',
+      'burning', 'jerking', 'sore', 'bursting', 'likeACut', 'stabbing',
+      'cramping', 'likePlugStuck', 'stinging', 'crushing', 'likeRock', 'stupefying',
+      'cutting', 'likeSplinter', 'tearing', 'digging', 'pinching', 'throbbing'
+    ];
+    
+    symptomTypes.forEach(symptom => {
+      if (frontendData.symptoms?.types?.[symptom]) {
+        symptomsArray.push(symptom);
       }
     });
 
-    // Transform recurring issues checkboxes to array
-    const recurringIssuesArray = [];
-    Object.keys(frontendData.recurringIssues || {}).forEach(key => {
-      if (frontendData.recurringIssues[key]) {
-        recurringIssuesArray.push(key);
-      }
-    });
+    // Transform recurring issues checkboxes to object (as per backend schema)
+    const recurringIssuesObject = frontendData.recurringIssues || {};
 
     // Transform family history to array
-    const familyHistoryArray = Object.keys(frontendData.familyHealth || {}).map(relation => ({
-      relation,
-      ageAlive: frontendData.familyHealth[relation]?.ageAlive || '',
-      agePassing: frontendData.familyHealth[relation]?.agePassing || '',
-      ailments: frontendData.familyHealth[relation]?.ailments || ''
-    }));
+    const familyHistoryArray = [];
+    const familyRelations = [
+      'mother', 'father', 'siblings', 'maternalGrandmother', 'maternalGrandfather', 
+      'maternalAuntsUncles', 'paternalGrandmother', 'paternalGrandfather', 'paternalAuntsUncles'
+    ];
+
+    familyRelations.forEach(relation => {
+      if (frontendData.familyHealth?.[relation]) {
+        familyHistoryArray.push({
+          relation,
+          ageAlive: frontendData.familyHealth[relation]?.ageAlive || '',
+          agePassing: frontendData.familyHealth[relation]?.agePassing || '',
+          ailments: frontendData.familyHealth[relation]?.ailments || ''
+        });
+      }
+    });
 
     return {
       // Step 1 data
@@ -356,7 +387,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
       illnessHistory: frontendData.illnessHistory || {},
 
       // Step 4 data
-      recurringIssues: frontendData.recurringIssues || {},
+      recurringIssues: recurringIssuesObject,
       vaccinationReactions: {
         hadReaction: frontendData.vaccinationReactions?.hadReaction || '',
         healthDeclined: frontendData.vaccinationReactions?.healthDeclined || '',
@@ -418,6 +449,24 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     return [1, 2, 3, 4, 5, 6].reduce((acc, s) => ({ ...acc, ...validateStep(s, data) }), {});
   };
 
+  // Check for stored appointment data on component mount
+  useEffect(() => {
+    dispatch(getStoredUserId());
+    const storedData = dispatch(getStoredAppointmentData());
+    if (storedData) {
+      setFormData(storedData);
+    }
+  }, [dispatch]);
+
+  // Sync with Redux state
+  useEffect(() => {
+    if (isSubmitted) {
+      setSubmitted(true);
+      setIsFormComplete(true);
+      onFormComplete && onFormComplete(true);
+    }
+  }, [isSubmitted, onFormComplete]);
+
   // Sync external control only
   useEffect(() => {
     if (externalIsFormComplete !== undefined) {
@@ -430,6 +479,8 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
   const isCurrentStepValid = useMemo(() => Object.keys(currentStepErrors).length === 0, [currentStepErrors]);
   const allErrors = useMemo(() => validateAll(formData), [formData]);
   const isAllValid = useMemo(() => Object.keys(allErrors).length === 0, [allErrors]);
+
+  const progressPercentage = (currentStep / totalSteps) * 100;
 
   // Handlers
   const handleInputChange = (e) => {
@@ -497,38 +548,70 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     }
   };
 
-  const handleSubmit = (e) => {
+  // Updated handleSubmit with Redux integration
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validateAll(formData);
     setErrors(errs);
+    
     if (Object.keys(errs).length > 0) {
       const firstInvalidStep = [1, 2, 3, 4, 5, 6].find((s) => Object.keys(validateStep(s, formData)).length > 0);
       if (firstInvalidStep && firstInvalidStep !== currentStep) setCurrentStep(firstInvalidStep);
       return;
     }
     
-    // Transform data to backend format before submitting
-    const backendData = transformToBackendFormat(formData);
-    console.log('Form Data (Backend Format):', backendData);
-    
-    setIsFormComplete(true);
-    setSubmitted(true);
-    onFormComplete && onFormComplete(true);
-    onFormSubmit && onFormSubmit(backendData); // Pass transformed data
-    alert('Form submitted successfully! Check console for data. / फॉर्म सफलतापूर्वक सबमिट हो गया! डेटा के लिए कंसोल जांचें।');
+    try {
+      // Transform data to backend format before submitting
+      const backendData = transformToBackendFormat(formData);
+      console.log('Form Data (Backend Format):', backendData);
+      
+      // Submit via Redux
+      const result = await dispatch(submitOnlineAppointment(backendData)).unwrap();
+      
+      if (result.success) {
+        setIsFormComplete(true);
+        setSubmitted(true);
+        onFormComplete && onFormComplete(true);
+        onFormSubmit && onFormSubmit(backendData);
+        
+        console.log('Appointment submitted successfully:', result);
+      }
+    } catch (error) {
+      console.error('Failed to submit appointment:', error);
+      alert(`${translations.submissionError}\nError: ${error.message}`);
+    }
   };
 
   const handleEditForm = () => {
     setIsEditing(true);
+    dispatch(setAppointmentSubmitted(false));
   };
 
-  const handleSaveEdit = () => {
-    setIsEditing(false);
-    setIsFormComplete(true);
-    onFormComplete && onFormComplete(true);
-  };
+  const handleSaveEdit = async () => {
+    const errs = validateAll(formData);
+    setErrors(errs);
+    
+    if (Object.keys(errs).length > 0) {
+      const firstInvalidStep = [1, 2, 3, 4, 5, 6].find((s) => Object.keys(validateStep(s, formData)).length > 0);
+      if (firstInvalidStep && firstInvalidStep !== currentStep) setCurrentStep(firstInvalidStep);
+      return;
+    }
 
-  const progressPercentage = (currentStep / totalSteps) * 100;
+    try {
+      const backendData = transformToBackendFormat(formData);
+      const result = await dispatch(submitOnlineAppointment(backendData)).unwrap();
+      
+      if (result.success) {
+        setIsEditing(false);
+        setIsFormComplete(true);
+        onFormComplete && onFormComplete(true);
+        console.log('Appointment updated successfully:', result);
+      }
+    } catch (error) {
+      console.error('Failed to update appointment:', error);
+      alert(`${translations.submissionError}\nError: ${error.message}`);
+    }
+  };
 
   const steps = [
     { number: 1, title: translations.lifeEvents },
@@ -554,10 +637,25 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
             <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
               {translations.formSubmitted}
             </p>
-            <div className="flex justify-center">
+            
+            {/* Payment Button */}
+            <div className="mb-6">
+              <button
+                onClick={() => {
+                  // Navigate to payment page or open payment modal
+                  console.log('Proceed to payment');
+                  alert('Redirecting to payment gateway...');
+                }}
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition text-base sm:text-lg mb-4"
+              >
+                {translations.completePayment}
+              </button>
+            </div>
+            
+            <div className="flex justify-center space-x-4">
               <button
                 onClick={handleEditForm}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition text-base sm:text-lg"
+                className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition text-sm sm:text-base"
               >
                 {translations.editForm}
               </button>
@@ -588,6 +686,13 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
             ></div>
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
           {/* Step Indicators */}
           <div className="flex justify-between items-center overflow-x-auto pb-2 -mx-2 px-2">
             {steps.map((step) => (
@@ -617,7 +722,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
         <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 md:p-8">
           <form onSubmit={handleSubmit}>
-            {/* Step 1 - Updated to match backend fields */}
+            {/* Step 1 - Life Events */}
             {currentStep === 1 && (
               <div className="space-y-4 sm:space-y-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 border-b pb-2 sm:pb-3">
@@ -785,7 +890,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
               </div>
             )}
 
-            {/* Step 2 - Updated to match backend fields */}
+            {/* Step 2 - Early Development */}
             {currentStep === 2 && (
               <div className="space-y-4 sm:space-y-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 border-b pb-2 sm:pb-3">
@@ -887,7 +992,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
               </div>
             )}
 
-            {/* Step 3 - Illness History (already matches backend) */}
+            {/* Step 3 - Illness History */}
             {currentStep === 3 && (
               <div className="space-y-4 sm:space-y-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 border-b pb-2 sm:pb-3">
@@ -916,7 +1021,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
               </div>
             )}
 
-            {/* Step 4 - Updated to match backend fields */}
+            {/* Step 4 - Recurring Issues & Vaccinations */}
             {currentStep === 4 && (
               <div className="space-y-6 sm:space-y-8">
                 <div>
@@ -1045,7 +1150,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
               </div>
             )}
 
-            {/* Step 5 - Updated to match backend fields */}
+            {/* Step 5 - Symptoms */}
             {currentStep === 5 && (
               <div className="space-y-4 sm:space-y-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 border-b pb-2 sm:pb-3">
@@ -1057,7 +1162,13 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
                     {translations.symptomsDescription}
                   </p>
                   <div className="grid grid-cols-2 gap-1 sm:gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                    {Object.keys(formData.symptoms.types || {}).map((symptom) => (
+                    {[
+                      'aching', 'drawing', 'pressureInwards', 'biting', 'dull', 'pressureOutwards',
+                      'boring', 'electric', 'pulsating', 'bruised', 'gripping', 'shooting',
+                      'burning', 'jerking', 'sore', 'bursting', 'likeACut', 'stabbing',
+                      'cramping', 'likePlugStuck', 'stinging', 'crushing', 'likeRock', 'stupefying',
+                      'cutting', 'likeSplinter', 'tearing', 'digging', 'pinching', 'throbbing'
+                    ].map((symptom) => (
                       <label key={symptom} className="flex items-center p-1 sm:p-2 border border-gray-300 rounded hover:bg-gray-50 cursor-pointer transition text-xs">
                         <input
                           type="checkbox"
@@ -1183,7 +1294,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
               </div>
             )}
 
-            {/* Step 6 - Family History (needs transformation to array) */}
+            {/* Step 6 - Family History */}
             {currentStep === 6 && (
               <div className="space-y-4 sm:space-y-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 border-b pb-2 sm:pb-3">
@@ -1256,14 +1367,14 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
               </div>
             )}
 
-            {/* Navigation Buttons */}
+            {/* Navigation Buttons - Updated with loading state */}
             <div className="flex flex-col-reverse sm:flex-row justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t space-y-3 sm:space-y-0 space-y-reverse">
               <button
                 type="button"
                 onClick={prevStep}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 || isLoading}
                 className={`px-4 sm:px-6 py-2 sm:py-3 rounded-md font-semibold transition text-sm sm:text-base ${
-                  currentStep === 1
+                  currentStep === 1 || isLoading
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-600 hover:bg-gray-700 text-white'
                 }`}
@@ -1275,9 +1386,9 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
                 <button
                   type="button"
                   onClick={nextStep}
-                  disabled={!isCurrentStepValid}
+                  disabled={!isCurrentStepValid || isLoading}
                   className={`px-4 sm:px-6 py-2 sm:py-3 rounded-md text-sm sm:text-base font-semibold transition ${
-                    isCurrentStepValid
+                    isCurrentStepValid && !isLoading
                       ? 'bg-blue-600 hover:bg-blue-700 text-white'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
@@ -1290,21 +1401,26 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
                     <button
                       type="button"
                       onClick={handleSaveEdit}
-                      className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition text-sm sm:text-base"
+                      disabled={isLoading}
+                      className={`px-4 sm:px-6 py-2 sm:py-3 font-semibold rounded-md transition text-sm sm:text-base ${
+                        isLoading
+                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
                     >
-                      {translations.saveChanges}
+                      {isLoading ? translations.submittingForm : translations.saveChanges}
                     </button>
                   )}
                   <button
                     type="submit"
-                    disabled={!isAllValid}
+                    disabled={!isAllValid || isLoading}
                     className={`px-4 sm:px-8 py-2 sm:py-3 font-bold rounded-md transition text-sm sm:text-base ${
-                      !isAllValid
+                      !isAllValid || isLoading
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         : 'bg-green-600 hover:bg-green-700 text-white'
                     }`}
                   >
-                    {isEditing ? translations.updateForm : translations.submitForm}
+                    {isLoading ? translations.submittingForm : (isEditing ? translations.updateForm : translations.submitForm)}
                   </button>
                 </div>
               )}
@@ -1315,7 +1431,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
         {/* Footer Info */}
         <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-600">
           <p>{translations.confidential}</p>
-          {isFormComplete && (
+          {isFormComplete && !submitted && (
             <p className="text-green-600 font-semibold mt-2">
               {translations.formComplete}
             </p>

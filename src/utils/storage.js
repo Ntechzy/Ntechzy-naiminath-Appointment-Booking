@@ -5,6 +5,10 @@ import { encryptData, decryptData } from './encryption';
 export const STORAGE_KEYS = {
   USER_ID: 'encrypted_user_id',
   USER_DATA: 'encrypted_user_data',
+  BOOKING_ID: 'encrypted_booking_id',
+  BOOKING_DATA: 'encrypted_booking_data',
+  APPOINTMENT_ID: 'encrypted_appointment_id',
+  APPOINTMENT_DATA: 'encrypted_appointment_data',
 };
 
 /**
