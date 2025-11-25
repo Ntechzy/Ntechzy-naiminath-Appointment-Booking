@@ -1,4 +1,3 @@
-// src/store/api/userApi.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const userApi = createApi({
@@ -12,7 +11,6 @@ export const userApi = createApi({
   }),
   tagTypes: ['User'],
   endpoints: (builder) => ({
-    // Create User - POST /api/users/
     createUser: builder.mutation({
       query: (userData) => ({
         url: '',
@@ -21,14 +19,10 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['User'],
     }),
-    
-    // Get User by ID - GET /api/users/:id
     getUser: builder.query({
       query: (id) => `${id}`,
       providesTags: (result, error, id) => [{ type: 'User', id }],
     }),
-    
-    // Update User - PATCH /api/users/:id
     updateUser: builder.mutation({
       query: ({ id, ...userData }) => ({
         url: `${id}`,

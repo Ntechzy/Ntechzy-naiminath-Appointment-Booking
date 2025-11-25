@@ -1,12 +1,10 @@
-// src/components/CompleteCaseForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   submitOnlineAppointment,
   setAppointmentSubmitted,
   getStoredAppointmentData 
-} from '../store/slices/onlineAppointmentSlice';
-import { getStoredUserId } from '../store/slices/userSlice';
+} from '../../store/slices/onlineAppointmentSlice';
 
 const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externalIsFormComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -47,14 +45,12 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     // Step 1: Significant Life Events
     significantLifeEvents: 'Significant Life Events / महत्वपूर्ण जीवन घटनाएं',
     timelineLabel: 'Timeline from birth to present / जन्म से वर्तमान तक की समयरेखा',
-    timelineDescription:
-      'Include: traumas, romantic disappointments, divorces, work/family issues, deaths, humiliations, major illnesses, onset of conditions, medications. / शामिल करें: आघात, रोमांटिक निराशाएं, तलाक, काम/परिवार के मुद्दे, मौतें, अपमान, प्रमुख बीमारियां, स्थितियों की शुरुआत, दवाएं',
+    timelineDescription: 'Include: traumas, romantic disappointments, divorces, work/family issues, deaths, humiliations, major illnesses, onset of conditions, medications. / शामिल करें: आघात, रोमांटिक निराशाएं, तलाक, काम/परिवार के मुद्दे, मौतें, अपमान, प्रमुख बीमारियां, स्थितियों की शुरुआत, दवाएं',
     timelinePlaceholder: 'Describe your life timeline... / अपनी जीवन समयरेखा का वर्णन करें...',
     explainChildhood: 'Explain your childhood: / अपने बचपन के बारे में बताएं:',
     pleasant: 'Pleasant / सुखद',
     specificFear: 'Specific Fear during childhood / बचपन के दौरान विशिष्ट भय',
-    natureLabel:
-      'Nature - Reaction during anger (if expressed, explain how): / स्वभाव - गुस्से के दौरान प्रतिक्रिया (यदि व्यक्त की गई है, तो बताएं कैसे):',
+    natureLabel: 'Nature - Reaction during anger (if expressed, explain how): / स्वभाव - गुस्से के दौरान प्रतिक्रिया (यदि व्यक्त की गई है, तो बताएं कैसे):',
     throwingThings: 'Throwing things / चीजें फेंकना',
     shouting: 'Shouting / चिल्लाना',
     sittingAlone: 'Sitting alone / अकेले बैठना',
@@ -83,13 +79,11 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     crawl: 'Ability to crawl / रेंगने की क्षमता',
     walk: 'Ability to walk / चलने की क्षमता',
     talk: 'Ability to talk / बोलने की क्षमता',
-    standardAgeFrames:
-      'If you are unsure, do you know if these events occurred within the standard age frames? / यदि आप अनिश्चित हैं, तो क्या आप जानते हैं कि क्या ये घटनाएं मानक आयु सीमा के भीतर हुई थीं?',
+    standardAgeFrames: 'If you are unsure, do you know if these events occurred within the standard age frames? / यदि आप अनिश्चित हैं, तो क्या आप जानते हैं कि क्या ये घटनाएं मानक आयु सीमा के भीतर हुई थीं?',
     standardAgeFramesPlaceholder: 'Yes/No/Unsure... / हाँ/नहीं/अनिश्चित...',
 
     // Step 3: Illness History
-    illnessNote:
-      'If affected by any illness, indicate age and severity (severe/mild/long-lasting) / यदि किसी बीमारी से प्रभावित हैं, तो उम्र और गंभीरता (गंभीर/हल्की/लंबे समय तक चलने वाली) बताएं',
+    illnessNote: 'If affected by any illness, indicate age and severity (severe/mild/long-lasting) / यदि किसी बीमारी से प्रभावित हैं, तो उम्र और गंभीरता (गंभीर/हल्की/लंबे समय तक चलने वाली) बताएं',
     chickenPox: 'Chicken Pox / चिकन पॉक्स',
     mumps: 'Mumps / कनफेड़',
     germanMeasles: 'German Measles / जर्मन खसरा',
@@ -128,27 +122,22 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
     // Step 5: Symptoms
     symptomsPain: 'Symptoms & Pain / लक्षण और दर्द',
-    symptomsDescription:
-      'Check all boxes that describe the symptoms/pain: / उन सभी बॉक्सों को चेक करें जो लक्षणों/दर्द का वर्णन करते हैं:',
+    symptomsDescription: 'Check all boxes that describe the symptoms/pain: / उन सभी बॉक्सों को चेक करें जो लक्षणों/दर्द का वर्णन करते हैं:',
     symptomsBetter: 'What makes the pain/symptom better? / दर्द/लक्षण को क्या बेहतर बनाता है?',
-    symptomsBetterDesc:
-      'Heat, cold, motion, being still, menstrual cycle, sitting, lying, etc. / गर्मी, ठंड, गति, स्थिर रहना, मासिक धर्म चक्र, बैठना, लेटना, आदि',
+    symptomsBetterDesc: 'Heat, cold, motion, being still, menstrual cycle, sitting, lying, etc. / गर्मी, ठंड, गति, स्थिर रहना, मासिक धर्म चक्र, बैठना, लेटना, आदि',
     symptomsBetterPlaceholder: 'What helps... / क्या मदद करता है...',
     symptomsWorse: 'What makes symptoms worse? / लक्षणों को क्या बदतर बनाता है?',
     symptomsWorsePlaceholder: 'What worsens... / क्या बदतर बनाता है...',
-    symptomsTimeOfDay:
-      'Is there a specific time of day that your symptoms are worse? / क्या दिन का कोई विशिष्ट समय है जब आपके लक्षण बदतर होते हैं?',
+    symptomsTimeOfDay: 'Is there a specific time of day that your symptoms are worse? / क्या दिन का कोई विशिष्ट समय है जब आपके लक्षण बदतर होते हैं?',
     symptomsTimePlaceholder: 'Time of day... / दिन का समय...',
     dailyBasis: 'Do you have pain/symptoms on a daily basis? / क्या आपको रोजाना दर्द/लक्षण होते हैं?',
     painLocation: 'Where do you feel it? (location) / आप इसे कहाँ महसूस करते हैं? (स्थान)',
     painLocationPlaceholder: 'Pain location... / दर्द का स्थान...',
-    painExtends:
-      'Does the pain extend to another location? If so, where? / क्या दर्द किसी अन्य स्थान तक फैलता है? यदि हां, तो कहाँ?',
+    painExtends: 'Does the pain extend to another location? If so, where? / क्या दर्द किसी अन्य स्थान तक फैलता है? यदि हां, तो कहाँ?',
     painExtendsPlaceholder: 'Extension location... / विस्तार स्थान...',
 
     // Step 6: Family Health History
-    familyHealthNote:
-      'Indicate which ailments have affected your relatives, including their ages, to the best of your ability. / बताएं कि कौन सी बीमारियों ने आपके रिश्तेदारों को प्रभावित किया है, उनकी उम्र सहित, अपनी पूरी क्षमता के अनुसार',
+    familyHealthNote: 'Indicate which ailments have affected your relatives, including their ages, to the best of your ability. / बताएं कि कौन सी बीमारियों ने आपके रिश्तेदारों को प्रभावित किया है, उनकी उम्र सहित, अपनी पूरी क्षमता के अनुसार',
     relation: 'Relation / संबंध',
     ageAlive: 'Age if alive / यदि जीवित हैं तो उम्र',
     agePassing: 'Age at passing / मृत्यु के समय उम्र',
@@ -175,8 +164,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
     // Messages
     formCompleted: 'Case Form Completed! / केस फॉर्म पूरा हो गया!',
-    formSubmitted:
-      'Your case form has been successfully submitted. You can now proceed to payment. / आपका केस फॉर्म सफलतापूर्वक सबमिट हो गया है। अब आप भुगतान के लिए आगे बढ़ सकते हैं।',
+    formSubmitted: 'Your case form has been successfully submitted. You can now proceed to payment. / आपका केस फॉर्म सफलतापूर्वक सबमिट हो गया है। अब आप भुगतान के लिए आगे बढ़ सकते हैं।',
     confidential: 'Your information is confidential and secure. / आपकी जानकारी गोपनीय और सुरक्षित है।',
     formComplete: '✓ Form is complete. You can proceed to payment. / ✓ फॉर्म पूरा हो गया है। आप भुगतान के लिए आगे बढ़ सकते हैं。',
 
@@ -226,12 +214,12 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     childhoodDescription: '',
     childhoodPleasant: false,
     childhoodSpecificFear: '',
-    angerReaction: [],
+    angerReaction: {},
     pleasantTimeOfLife: '',
     strugglingTimeOfLife: '',
     painfulTimeOfLife: '',
     hobbies: '',
-    stressFactors: [],
+    stressFactors: {},
 
     // Step 2: Early Development (matches backend)
     earlyDevelopment: {
@@ -289,7 +277,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
     // Step 5: Symptoms (matches backend)
     symptoms: {
-      types: [],
+      types: {},
       symptomBetterWith: '',
       symptomWorseWith: '',
       symptomWorseTimeOfDay: '',
@@ -299,7 +287,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     },
 
     // Step 6: Family History (matches backend)
-    familyHistory: []
+    familyHealth: {}
   });
 
   // Helper function to convert frontend data to backend format
@@ -388,11 +376,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
       // Step 4 data
       recurringIssues: recurringIssuesObject,
-      vaccinationReactions: {
-        hadReaction: frontendData.vaccinationReactions?.hadReaction || '',
-        healthDeclined: frontendData.vaccinationReactions?.healthDeclined || '',
-        allergyDesensitization: frontendData.vaccinationReactions?.allergyDesensitization || ''
-      },
+      vaccinationReactions: frontendData.vaccinationReactions || {},
 
       // Step 5 data
       symptoms: {
@@ -451,11 +435,18 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
 
   // Check for stored appointment data on component mount
   useEffect(() => {
-    dispatch(getStoredUserId());
-    const storedData = dispatch(getStoredAppointmentData());
-    if (storedData) {
-      setFormData(storedData);
-    }
+    const loadStoredData = async () => {
+      try {
+        const storedData = await dispatch(getStoredAppointmentData());
+        if (storedData?.payload) {
+          setFormData(storedData.payload);
+        }
+      } catch (error) {
+        console.log('No stored appointment data found');
+      }
+    };
+    
+    loadStoredData();
   }, [dispatch]);
 
   // Sync with Redux state
@@ -548,7 +539,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     }
   };
 
-  // Updated handleSubmit with Redux integration
+  // Updated handleSubmit with proper API integration
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validateAll(formData);
@@ -559,13 +550,18 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
       if (firstInvalidStep && firstInvalidStep !== currentStep) setCurrentStep(firstInvalidStep);
       return;
     }
-    
+
     try {
+      // Check if userId is available
+      if (!userId) {
+        throw new Error('User ID not found. Please complete user registration first.');
+      }
+
       // Transform data to backend format before submitting
       const backendData = transformToBackendFormat(formData);
-      console.log('Form Data (Backend Format):', backendData);
+      console.log('Submitting appointment data:', backendData);
       
-      // Submit via Redux
+      // Submit via Redux thunk action
       const result = await dispatch(submitOnlineAppointment(backendData)).unwrap();
       
       if (result.success) {
@@ -575,6 +571,9 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
         onFormSubmit && onFormSubmit(backendData);
         
         console.log('Appointment submitted successfully:', result);
+        alert(translations.submissionSuccess);
+      } else {
+        throw new Error(result.message || 'Failed to submit appointment');
       }
     } catch (error) {
       console.error('Failed to submit appointment:', error);
@@ -585,6 +584,7 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
   const handleEditForm = () => {
     setIsEditing(true);
     dispatch(setAppointmentSubmitted(false));
+    setSubmitted(false);
   };
 
   const handleSaveEdit = async () => {
@@ -598,14 +598,20 @@ const CompleteCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: extern
     }
 
     try {
+      if (!userId) {
+        throw new Error('User ID not found. Please complete user registration first.');
+      }
+
       const backendData = transformToBackendFormat(formData);
       const result = await dispatch(submitOnlineAppointment(backendData)).unwrap();
       
       if (result.success) {
         setIsEditing(false);
         setIsFormComplete(true);
+        setSubmitted(true);
         onFormComplete && onFormComplete(true);
         console.log('Appointment updated successfully:', result);
+        alert('Form updated successfully!');
       }
     } catch (error) {
       console.error('Failed to update appointment:', error);
