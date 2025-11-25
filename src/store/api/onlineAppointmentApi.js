@@ -1,16 +1,23 @@
+// src/store/api/onlineAppointmentApi.js
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+const BACKEND_API = import.meta.env.VITE_BACKEND_API;
 
 export const onlineAppointmentApi = createApi({
   reducerPath: 'onlineAppointmentApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/appointments/',
+    baseUrl: `${BACKEND_API}/appointments/`,  // <-- using .env here
     prepareHeaders: (headers) => {
       headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),
+
   tagTypes: ['OnlineAppointment'],
+
   endpoints: (builder) => ({
+
+    // CREATE APPOINTMENT
     createOnlineAppointment: builder.mutation({
       query: (appointmentData) => ({
         url: 'online',
@@ -19,6 +26,8 @@ export const onlineAppointmentApi = createApi({
       }),
       invalidatesTags: ['OnlineAppointment'],
     }),
+
+    // GET APPOINTMENTS WITH QUERY PARAMS
     getOnlineAppointments: builder.query({
       query: ({ page = 1, limit = 10, status } = {}) => {
         const params = new URLSearchParams();
@@ -29,6 +38,7 @@ export const onlineAppointmentApi = createApi({
       },
       providesTags: ['OnlineAppointment'],
     }),
+
   }),
 });
 

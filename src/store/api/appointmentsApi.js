@@ -1,9 +1,13 @@
+// src/store/api/appointmentsApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+const BACKEND_API = import.meta.env.VITE_BACKEND_API;
 
 export const appointmentsApi = createApi({
   reducerPath: "appointmentsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3000/api/appointments/",
+    baseUrl: `${BACKEND_API}/appointments/`, // using env variable
+
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("adminToken");
 
@@ -14,37 +18,32 @@ export const appointmentsApi = createApi({
       headers.set("Content-Type", "application/json");
       return headers;
     },
+
     credentials: "include",
   }),
 
-  // ⭐ Required for auto-refetch AFTER cancel
   tagTypes: ["OnlineAppointments"],
 
   endpoints: (builder) => ({
 
-    // ============================
-    // GET ONLINE APPOINTMENTS
-    // ============================
+    // GET Online Appointments
     getOnlineAppointments: builder.query({
       query: ({ page = 1, limit = 10, status = "" }) => {
         let url = `online?page=${page}&limit=${limit}`;
         if (status) url += `&status=${status}`;
         return url;
       },
-      providesTags: ["OnlineAppointments"], // important!
+      providesTags: ["OnlineAppointments"],
     }),
 
-    // ============================
-    // CANCEL ONLINE APPOINTMENT
-    // PATCH /online/:appointmentId/cancel
-    // ============================
+    // CANCEL Online Appointment
     cancelOnlineAppointment: builder.mutation({
       query: (appointmentId) => ({
         url: `online/${appointmentId}/cancel`,
         method: "PATCH",
         credentials: "include",
       }),
-      invalidatesTags: ["OnlineAppointments"], // auto refresh list
+      invalidatesTags: ["OnlineAppointments"],
     }),
 
   }),
