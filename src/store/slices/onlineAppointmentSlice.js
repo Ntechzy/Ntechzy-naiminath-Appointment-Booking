@@ -5,7 +5,7 @@ import {
   removeEncryptedItem,
   STORAGE_KEYS
 } from '../../utils/storage';
-import { onlineAppointmentApi } from '../api/onlineAppointmentApi';
+import { appointmentsApi } from '../../api/endpoints/appointments';
 
 const initialState = {
   currentAppointment: null,
@@ -123,21 +123,18 @@ export const submitOnlineAppointment = (appointmentData) => async (dispatch, get
 
     const { user } = getState();
     const userId = user.userId;
-    const id = sessionStorage.getItem("userId") 
 
-    if (!id) {
-      console.log("lets check");
-
+    if (!userId) {
       throw new Error('User ID not found. Please complete user registration first.');
     }
 
     const submissionData = {
-      userId: id,
+      userId: userId,
       formData: appointmentData,
     };
 
     const result = await dispatch(
-      onlineAppointmentApi.endpoints.createOnlineAppointment.initiate(submissionData)
+      appointmentsApi.endpoints.createOnlineAppointment.initiate(submissionData)
     ).unwrap();
 
     if (result.success) {

@@ -4,7 +4,7 @@ import BackButton from "./BackButton";
 import ServiceInfo from "./ServiceInfo";
 import CalendarPicker from "./CalendarPicker";
 import TimeSlotsPanel from "./TimeSlotsPanel";
-import { slotsData } from "../data/slotsData";
+import { slotsData } from "../utils/slotsData";
 
 const BookingWrapper = () => {
   const [selectedDate, setSelectedDate] = useState(null);
