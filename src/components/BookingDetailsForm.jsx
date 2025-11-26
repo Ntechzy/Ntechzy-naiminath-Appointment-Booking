@@ -10,6 +10,7 @@ import {
   storeUserData,
   getStoredUserData,
   clearStoredUserData,
+  clearUserDataOnly,
   setUserId
 } from "../store/slices/userSlice";
 
@@ -24,7 +25,7 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
 
   const { data: fetchedUserData, isLoading: isUserLoading } = useGetUserQuery(userId, {
-    skip: !userId,
+    skip: !userId || !!userData, // Skip if no userId or userData already exists
   });
 
   const translations = {
@@ -56,12 +57,25 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
   };
 
   useEffect(() => {
-    dispatch(getStoredUserId());
-    dispatch(getStoredUserData());
-  }, [dispatch]);
+    // Only fetch stored data if not already in Redux state
+    if (!userId) {
+      dispatch(getStoredUserId());
+    }
+    if (!userData) {
+      dispatch(getStoredUserData());
+    }
+  }, [dispatch, userId, userData]);
 
   useEffect(() => {
-    if (fetchedUserData?.success && fetchedUserData.data?.user) {
+    // Prioritize existing userData over fetched data to avoid unnecessary re-renders
+    if (userData) {
+      formik.setValues({
+        name: userData.fullName || "",
+        phone: userData.mobile || "",
+        email: userData.email || "",
+      });
+      setSelectedMode(userData.mode || "");
+    } else if (fetchedUserData?.success && fetchedUserData.data?.user) {
       const user = fetchedUserData.data.user;
       formik.setValues({
         name: user.fullName || "",
@@ -70,13 +84,6 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
       });
       setSelectedMode(user.mode || "");
       dispatch(storeUserData(user));
-    } else if (userData) {
-      formik.setValues({
-        name: userData.fullName || "",
-        phone: userData.mobile || "",
-        email: userData.email || "",
-      });
-      setSelectedMode(userData.mode || "");
     }
   }, [fetchedUserData, userData, dispatch]);
 
@@ -104,6 +111,18 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         setServerErrors([]);
+        
+        // If we have userId and userData, skip API call and proceed directly
+        if (userId && userData) {
+          onSubmit({
+            ...values,
+            selectedType: selectedMode,
+            user: userData,
+            userId: userId,
+          });
+          return;
+        }
+
         const userPayload = {
           fullName: values.name.trim(),
           mobile: values.phone,
@@ -116,23 +135,32 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
 
         let result;
         if (userId) {
-          result = await updateUser({ id: userId, ...userPayload }).unwrap();
-          console.log(result);
-
-
+          // Only update if data has actually changed
+          const hasChanges = 
+            userData?.fullName !== values.name.trim() ||
+            userData?.mobile !== values.phone ||
+            userData?.email !== (values.email?.trim() || '') ||
+            userData?.mode !== selectedMode.toLowerCase();
+            
+          if (hasChanges) {
+            result = await updateUser({ id: userId, ...userPayload }).unwrap();
+            if (result.success) {
+              dispatch(storeUserData(result.data.user));
+            }
+          } else {
+            // No changes, use existing data
+            result = { success: true, data: { user: userData } };
+          }
         } else {
           result = await createUser(userPayload).unwrap();
           if (result.success && result.data?.user?._id) {
             const newUserId = result.data.user._id;
-            sessionStorage.setItem('userId', newUserId);
-            // dispatch(setUserId(newUserId))
             dispatch(storeUserIdForFuture(newUserId));
             dispatch(storeUserData(result.data.user));
           }
         }
 
         if (result.success) {
-          dispatch(clearStoredUserData()); // clear to generate new ID on next form
           onSubmit({
             ...values,
             selectedType: selectedMode,

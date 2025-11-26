@@ -1,6 +1,6 @@
 // src/components/OfflineAppointments.jsx
 import React, { useState } from "react";
-import { useDisableSlotMutation } from "../../store/api/slotsApi";
+import { useDisableSlotMutation, useAddSlotMutation } from "../../api/endpoints/slots";
 
 const OfflineAppointments = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -10,11 +10,13 @@ const OfflineAppointments = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const [disabledSlots, setDisabledSlots] = useState({});
-  const [showSlotMode, setShowSlotMode] = useState(false);
+  const [showSlotMode, setShowSlotMode] = useState(null);
+  const [capacity, setCapacity] = useState(1);
+  const [customTime, setCustomTime] = useState('');
 
-  // ⭐ RTK Query Disable Slot API
-  const [disableSlotApi, { isLoading: isSlotLoading }] =
-    useDisableSlotMutation();
+  // RTK Query APIs
+  const [disableSlotApi, { isLoading: isDisableLoading }] = useDisableSlotMutation();
+  const [addSlotApi, { isLoading: isAddLoading }] = useAddSlotMutation();
 
   const SLOT_LIST = [
     "10:00-10:30",
@@ -96,28 +98,32 @@ const OfflineAppointments = () => {
     setSelectedDate(day.dateStr);
   };
 
-  const handleDisableEntireDay = () => {
+  const handleAddSlot = async (slot) => {
     if (!selectedDate) return;
 
-    setShowSlotMode(false);
+    try {
+      const timeToUse = slot || customTime;
+      if (!timeToUse) {
+        alert('Please enter a time or select a slot');
+        return;
+      }
 
-    setDisabledSlots((prev) => {
-      const copy = { ...prev };
-      if (copy[selectedDate]) delete copy[selectedDate];
-      return copy;
-    });
+      const res = await addSlotApi({
+        date: selectedDate,
+        time: timeToUse,
+        capacity: capacity
+      }).unwrap();
 
-    setClosedDays((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(selectedDate)) newSet.delete(selectedDate);
-      else newSet.add(selectedDate);
-      return newSet;
-    });
+      alert(res.message || 'Slot added successfully!');
+      setCustomTime('');
+    } catch (error) {
+      console.error('Failed to add slot:', error);
+      alert(error?.data?.message || 'Failed to add slot');
+    }
   };
 
-  const handleOpenSlotMode = () => {
-    if (!selectedDate) return;
-    setShowSlotMode(true);
+  const handleAddCustomSlot = () => {
+    handleAddSlot(null);
   };
 
   // ⭐ Convert 30-min slots → backend hour-block format
@@ -137,32 +143,29 @@ const OfflineAppointments = () => {
     return `${hour}-${nextHour} ${mer}`;
   };
 
-  // ⭐ Connected to Backend API
   const handleDisableSlot = async (slot) => {
     if (!selectedDate) return;
 
     try {
       const convertedTime = convertTime(slot);
 
-      const response = await disableSlotApi({
-        date: new Date(selectedDate), // backend wants type: Date
-        time: convertedTime, // backend wants: "9-10 am"
+      const res = await disableSlotApi({
+        date: selectedDate,
+        time: convertedTime
       }).unwrap();
 
-      console.log("Slot API Response:", response);
-
-      // Update UI only after success
       setDisabledSlots((prev) => {
         const exists = prev[selectedDate] || [];
         const updated = exists.includes(slot)
           ? exists.filter((s) => s !== slot)
           : [...exists, slot];
-
         return { ...prev, [selectedDate]: updated };
       });
+
+      alert(res.message || 'Slot disabled successfully!');
     } catch (error) {
-      console.error("Failed to disable slot:", error);
-      alert("Failed to disable slot");
+      console.error('Failed to disable slot:', error);
+      alert(error?.data?.message || 'Failed to disable slot');
     }
   };
 
@@ -250,31 +253,28 @@ const OfflineAppointments = () => {
 
               <div className="flex gap-3 mb-4">
                 <button
-                  onClick={handleDisableEntireDay}
+                  onClick={() => setShowSlotMode('disable')}
                   className="flex-1 bg-red-600 text-white py-2 rounded-lg"
                 >
-                  Disable Entire Day
+                  Disable Slots
                 </button>
 
                 <button
-                  onClick={handleOpenSlotMode}
-                  className="flex-1 bg-yellow-500 text-white py-2 rounded-lg"
+                  onClick={() => setShowSlotMode('add')}
+                  className="flex-1 bg-green-600 text-white py-2 rounded-lg"
                 >
-                  Disable Slots
+                  Add Slot
                 </button>
               </div>
 
               {/* Slot Selection */}
-              {showSlotMode && (
+              {showSlotMode === 'disable' && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {SLOT_LIST.map((slot) => {
-                    const isDisabled =
-                      disabledSlots[selectedDate]?.includes(slot);
-
+                    const isDisabled = disabledSlots[selectedDate]?.includes(slot);
                     return (
                       <button
                         key={slot}
-                        disabled={isSlotLoading}
                         onClick={() => handleDisableSlot(slot)}
                         className={`py-2 rounded-lg border text-sm px-3 ${
                           isDisabled
@@ -293,6 +293,61 @@ const OfflineAppointments = () => {
                       </button>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Add Slot Mode */}
+              {showSlotMode === 'add' && (
+                <div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Custom Time
+                      </label>
+                      <input
+                        type="text"
+                        value={customTime}
+                        onChange={(e) => setCustomTime(e.target.value)}
+                        placeholder="e.g. 2:30 PM or 14:30"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Capacity
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={capacity}
+                        onChange={(e) => setCapacity(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleAddCustomSlot}
+                    disabled={!customTime}
+                    className="w-full mb-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Add Custom Time Slot
+                  </button>
+                  
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Or select from preset times:</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {SLOT_LIST.map((slot) => (
+                        <button
+                          key={slot}
+                          onClick={() => handleAddSlot(slot)}
+                          className="py-2 rounded-lg border text-sm px-3 bg-white text-gray-700 hover:bg-green-50 hover:border-green-300"
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

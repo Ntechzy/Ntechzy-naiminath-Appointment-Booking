@@ -1,11 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 // APIs
+import { api } from "../api";
 import { userApi } from "./api/userApi";
-import { adminApi } from "./api/adminApi";
-import { appointmentsApi } from "./api/appointmentsApi";
-import { onlineAppointmentApi } from "./api/onlineAppointmentApi";
-import { slotsApi } from "./api/slotsApi";
 
 // Slices
 import userReducer from "./slices/userSlice";
@@ -18,20 +15,14 @@ export const store = configureStore({
     admin: adminReducer,
     onlineAppointment: onlineAppointmentReducer,
 
+    [api.reducerPath]: api.reducer,
     [userApi.reducerPath]: userApi.reducer,
-    [adminApi.reducerPath]: adminApi.reducer,
-    [appointmentsApi.reducerPath]: appointmentsApi.reducer,
-    [onlineAppointmentApi.reducerPath]: onlineAppointmentApi.reducer,
-    [slotsApi.reducerPath]: slotsApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
-      .concat(userApi.middleware)
-      .concat(adminApi.middleware)
-      .concat(appointmentsApi.middleware)
-      .concat(onlineAppointmentApi.middleware)
-      .concat(slotsApi.middleware),
+      .concat(api.middleware)
+      .concat(userApi.middleware),
 });
 
 export default store;

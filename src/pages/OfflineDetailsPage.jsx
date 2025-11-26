@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import BackButton from "../components/BackButton";
-import EssentialCaseForm from "../components/caseForm/EssentialCaseForm";
+import { CaseForm } from "../components/caseForm";
 
 export default function OfflineDetailsPage() {
   const { state } = useLocation();
@@ -73,7 +73,7 @@ export default function OfflineDetailsPage() {
         </div>
 
         {/* ✅ Case Form */}
-        <EssentialCaseForm
+        <CaseForm
           onFormComplete={handleFormComplete}
           onFormSubmit={handleFormSubmit}
           isFormComplete={isFormComplete}
