@@ -79,35 +79,45 @@ export default function OnlineDetailsPage() {
       {/* Main Container */}
       <div className="relative z-10 max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl shadow-md p-5 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-5 shadow-sm">
-          <h2 className="text-lg sm:text-xl font-semibold text-blue-800 text-center mb-3">
-            Online Consultation / ऑनलाइन परामर्श
-          </h2>
+      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-5 shadow-sm">
+  <h2 className="text-lg sm:text-xl font-semibold text-blue-800 text-center mb-3">
+    Online Consultation / ऑनलाइन परामर्श
+  </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="bg-white border border-blue-200 rounded-md p-3 shadow-sm">
-              <p className="text-xs text-gray-500">Mode / तरीका</p>
-              <p className="font-semibold text-gray-900">Online</p>
-            </div>
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+    {/* Mode */}
+    <div className="bg-white border border-blue-200 rounded-md p-3 shadow-sm">
+      <p className="text-xs text-gray-500">Mode / तरीका</p>
+      <p className="font-semibold text-gray-900">Online</p>
+    </div>
 
-            <div className="bg-white border border-blue-200 rounded-md p-3 shadow-sm">
-              <p className="text-xs text-gray-500">Need Assistance?</p>
-              <p className="font-semibold text-gray-900">📞 +91 98765 43210</p>
-            </div>
+    {/* Phone Numbers */}
+    <div className="bg-white border border-blue-200 rounded-md p-3 shadow-sm">
+      <p className="text-xs text-gray-500">Need Assistance?</p>
 
-            <div className="bg-white border border-blue-200 rounded-md p-2 shadow-sm">
-              <p className="text-xs text-gray-500">Support Email</p>
-              <p className="font-semibold text-gray-900">
-                ✉️ support@naiminathhospital.com
-              </p>
-            </div>
-          </div>
+      <a href="tel:+919837247775" className="font-semibold text-gray-900 block hover:text-blue-700">
+        📞 +91 98372 47775
+      </a>
+    </div>
 
-          <p className="text-center text-xs sm:text-sm text-blue-800 font-medium mt-4">
-            Your appointment date & time will be scheduled by the hospital team.
-            You will receive confirmation through sms/email after verification.
-          </p>
-        </div>
+    {/* Email */}
+    <div className="bg-white border border-blue-200 rounded-md p-2 shadow-sm">
+      <p className="text-xs text-gray-500">Support Email</p>
+      <a
+        href="mailto:nhmcagra@gmail.com"
+        className="font-semibold text-gray-900 hover:text-blue-700 break-words"
+      >
+        ✉️ nhmcagra@gmail.com
+      </a>
+    </div>
+  </div>
+
+  <p className="text-center text-xs sm:text-sm text-blue-800 font-medium mt-4">
+    Your appointment date & time will be scheduled by the hospital team.
+    You will receive confirmation through sms/email after verification.
+  </p>
+</div>
+
 
         {/* Skip Button */}
         <div className="mb-6 flex justify-center">
