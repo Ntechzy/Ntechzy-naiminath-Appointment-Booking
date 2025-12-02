@@ -3,16 +3,18 @@ import React from "react";
 import hospitalLogo from "/logo2.png";
 
 const ServiceInfo = ({ textData, height = "h-full" }) => {
-  // Bilingual text configuration
+  // Updated bilingual text configuration
   const translations = {
-    hospitalName: "Naiminath Homoeopathic Hospital ",
+    hospitalName:
+      "Naiminath Homoeopathic Medical College Hospital and Research Centre",
     tagline: "Healing with the Power of Nature",
     appointmentBooking: "Appointment Booking / अपॉइंटमेंट बुकिंग",
-    consultation: " ",
+    consultation: "",
     consultationTime: "30 min consultation / 30 मिनट का परामर्श",
-    availableModes: "Available: Online / Offline / उपलब्ध: ऑनलाइन / ऑफलाइन",
+    availableModes:
+      "Available: Online / Offline / उपलब्ध: ऑनलाइन / ऑफलाइन",
     address:
-      "Naiminath Nagar, Agra, Uttar Pradesh / नैमिनाथ नगर, आगरा, उत्तर प्रदेश",
+      "NH-19, Nawalpur, Kuberpur, Agra, Uttar Pradesh 283206 / NH-19, नौवलपुर, कुबेरपुर, आगरा, उत्तर प्रदेश 283206",
     needHelp: "Need help? / सहायता चाहिए?",
     call: "Call: / कॉल:",
     email: "Email: / ईमेल:",
@@ -109,7 +111,7 @@ const ServiceInfo = ({ textData, height = "h-full" }) => {
           <span className="text-gray-600">{translations.address}</span>
         </div>
 
-        {/* ✅ Added descriptive section */}
+        {/* Description Section */}
         <p className="text-gray-600 mt-3 leading-relaxed">{textData}</p>
       </div>
 
@@ -118,9 +120,12 @@ const ServiceInfo = ({ textData, height = "h-full" }) => {
         <p className="font-medium text-gray-900 mb-2">
           {translations.needHelp}
         </p>
-        <p className="text-gray-600">{translations.call} +91 98765 43210</p>
+
+        <p className="text-gray-600">
+          {translations.call} +919837247775, +919837247776
+        </p>
         <p className="text-gray-600 mt-1">
-          {translations.email} support@naiminathhospital.com
+          {translations.email} nhmcagra@gmail.com
         </p>
       </div>
     </div>

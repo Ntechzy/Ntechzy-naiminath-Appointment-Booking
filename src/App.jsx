@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 
 import BookingWrapper from "./components/BookingWrapper";
 import BookingDetailsPage from "./pages/BookingDetailsPage";
@@ -16,6 +16,7 @@ import AdminLogin from "./pages/AdminLogin";
 import { ToastContainer } from "react-toastify";
 import OnlinePaymentPage from "./pages/OnlinePaymentPage";
 import OfflinePaymentPage from "./pages/OfflinePaymentPage";
+import { initializeUserFromSession } from "./store/slices/userSlice"
 import "react-toastify/dist/ReactToastify.css";
 
 const ProtectedRoute = ({ children }) => {
@@ -32,7 +33,28 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const ProtectedBookingRoute = ({ children }) => {
+  const { userId } = useSelector((state) => state.user);
+  const sessionUserId = sessionStorage.getItem("userId");
+
+  // if userId doesn't exist, block access
+  if (!userId && !sessionUserId) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+
+
 function App() {
+
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(initializeUserFromSession());
+  }, [dispatch]);
+
+
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -49,10 +71,33 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<BookingDetailsPage />} />
-        <Route path="/booking-wrapper" element={<BookingWrapper />} />
+        <Route
+          path="/booking-wrapper"
+          element={
+            <ProtectedBookingRoute>
+              <BookingWrapper />
+            </ProtectedBookingRoute>
+          }
+        />
+        <Route
+  path="/online-details"
+  element={
+    <ProtectedBookingRoute>
+      <OnlineDetailsPage />
+    </ProtectedBookingRoute>
+  }
+/>
+<Route
+  path="/offline-details"
+  element={
+    <ProtectedBookingRoute>
+      <OfflineDetailsPage />
+    </ProtectedBookingRoute>
+  }
+/>
         <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/online-details" element={<OnlineDetailsPage />} />
-        <Route path="/offline-details" element={<OfflineDetailsPage />} />
+       
+
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/payment-online" element={<OnlinePaymentPage />} />
         <Route path="/payment-offline" element={<OfflinePaymentPage />} />
