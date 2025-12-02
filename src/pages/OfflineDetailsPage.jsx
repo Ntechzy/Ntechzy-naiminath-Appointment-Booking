@@ -68,7 +68,8 @@ export default function OfflineDetailsPage() {
             );
 
             const appointmentResult = await createOfflineAppointment(payload).unwrap();
-            const appointmentId = appointmentResult.data._id;
+            const appointmentId = appointmentResult.data.appointmentId;
+            console.log(appointmentId,"72");
             
             // Initiate payment
             await initiatePayment(appointmentId);
@@ -105,6 +106,8 @@ export default function OfflineDetailsPage() {
   };
 
   const initiatePayment = async (appointmentId) => {
+    console.log(appointmentId);
+    
     try {
       const orderResult = await createPaymentOrder({ 
         appointmentId, 
