@@ -1,3 +1,4 @@
+// src/components/BookingDetailsForm.js
 import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -11,14 +12,18 @@ import {
   clearStoredUserData,
   setUserId,
   setUserData,
+  initializeUserFromSession,
+  newSession,
 } from "../store/slices/userSlice";
+import { useNavigate } from "react-router-dom";
 
 const BookingDetailsForm = ({ selectedType, onSubmit }) => {
   const [selectedMode, setSelectedMode] = useState(selectedType || "");
   const [serverErrors, setServerErrors] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   const dispatch = useDispatch();
 
-  const { userId, userData } = useSelector((state) => state.user);
+  const { userId, userData, sessionId } = useSelector((state) => state.user);
 
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
@@ -56,21 +61,59 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
     loadingUser: "Loading user data... / उपयोगकर्ता डेटा लोड हो रहा है...",
     newAppointment: "New Appointment / नया अपॉइंटमेंट",
     updateAppointment: "Update Appointment / अपॉइंटमेंट अपडेट करें",
+    startNewBooking: "Start New Booking / नई बुकिंग शुरू करें",
+    sessionInfo: "Session / सत्र",
+    userInfo: "User / उपयोगकर्ता",
+    returningUser: "Welcome back! Your details are pre-filled. / वापसी पर स्वागत है! आपका विवरण पहले से भरा हुआ है।",
   };
 
-  // Clear all previous session data on component mount
+  // Initialize user data from session on mount
   useEffect(() => {
-    // Clear Redux state
-    dispatch(clearStoredUserData());
-    
-    // Clear sessionStorage
-    sessionStorage.removeItem("userId");
-    
-    // Reset form state
-    formik.resetForm();
-    setSelectedMode(selectedType || "");
-    setServerErrors([]);
-  }, [dispatch]);
+    if (!isInitialized) {
+      dispatch(initializeUserFromSession());
+      setIsInitialized(true);
+    }
+  }, [dispatch, isInitialized]);
+
+  // Auto-fill form if user data exists in session
+  useEffect(() => {
+    if (userData && !formik.values.name && !formik.values.phone) {
+      formik.setValues({
+        name: userData.fullName || "",
+        phone: userData.mobile || "",
+        email: userData.email || "",
+      });
+
+      if (userData.mode) {
+        const capitalizedMode = userData.mode.charAt(0).toUpperCase() + userData.mode.slice(1);
+        setSelectedMode(capitalizedMode);
+      }
+    }
+  }, [userData]);
+
+  // Function to check if user can be reused
+  const canReuseUser = () => {
+    if (!userId || !userData) return false;
+
+    // Check if user has already completed booking
+    if (userData.isBookingDone === true) {
+      return false;
+    }
+
+    // Check if it's the same consultation mode
+    const currentMode = selectedMode.toLowerCase();
+    if (userData.mode && userData.mode !== currentMode) {
+      return false;
+    }
+
+    // Check if form values match stored user data
+    if (userData.fullName !== formik.values.name.trim() ||
+      userData.mobile !== formik.values.phone) {
+      return false;
+    }
+
+    return true;
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -93,59 +136,105 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
         .nullable()
         .transform((value) => (value === "" ? null : value)),
     }),
-    onSubmit: async (values, { setSubmitting }) => {
-      try {
-        setServerErrors([]);
+onSubmit: async (values, { setSubmitting }) => {
+  try {
+    setServerErrors([]);
 
-        const userPayload = {
-          fullName: values.name.trim(),
-          mobile: values.phone,
-          mode: selectedMode.toLowerCase(),
-          isBookingDone: false,
-        };
-        
-        if (values.email && values.email.trim()) {
-          userPayload.email = values.email.trim();
-        }
+    const userPayload = {
+      fullName: values.name.trim(),
+      mobile: values.phone,
+      mode: selectedMode.toLowerCase(),
+      isBookingDone: false,
+    };
 
-        // ALWAYS create a new user - never skip creation
-        let result;
-        result = await createUser(userPayload).unwrap();
+    if (values.email && values.email.trim()) {
+      userPayload.email = values.email.trim();
+    }
 
-        if (result.success && result.data?.user?._id) {
-          const newUserId = result.data.user._id;
-          
-          // Store userId ONLY in sessionStorage for temporary use
-          sessionStorage.setItem("userId", newUserId);
-          
-          // Also update Redux state for current session
-          dispatch(setUserId(newUserId));
-          dispatch(setUserData(result.data.user));
+    let result;
+    let newUserId = userId;
+    let userToSubmit = userData;
 
-          // Proceed with the form submission
-          onSubmit({
-            ...values,
-            selectedType: selectedMode,
-            user: result.data.user,
-            userId: newUserId,
-          });
-        }
-      } catch (error) {
-        console.error("Error creating user:", error);
-        
-        // Handle API errors
-        if (error.data && error.data.errors) {
-          setServerErrors(error.data.errors);
-        } else if (error.data && error.data.message) {
-          setServerErrors([{ message: error.data.message }]);
-        } else {
-          setServerErrors([{ message: "Failed to create booking. Please try again." }]);
-        }
-      } finally {
-        setSubmitting(false);
+    // Check if we can reuse existing user
+    if (canReuseUser()) {
+      console.log("Updating existing user:", userId);
+      result = await updateUser({
+        id: userId,
+        ...userPayload
+      }).unwrap();
+
+      if (result.success && result.data?.user) {
+        userToSubmit = result.data.user;
+        dispatch(setUserData(userToSubmit));
       }
-    },
+    } else {
+      console.log("Creating new user");
+      result = await createUser(userPayload).unwrap();
+
+      if (result.success && result.data?.user?._id) {
+        newUserId = result.data.user._id;
+        userToSubmit = result.data.user;
+
+        // Store in Redux and sessionStorage
+        dispatch(setUserId(newUserId));
+        dispatch(setUserData(userToSubmit));
+      }
+    }
+
+    if (result.success) {
+      // Pass the data to parent handler
+      onSubmit({
+        ...values,
+        selectedType: selectedMode,
+        user: userToSubmit,
+        userId: newUserId,
+      });
+
+      // ✅ Navigate to booking wrapper after successful create/update
+      navigate("/booking-wrapper", {
+        state: {
+          userId: newUserId,
+          mode: selectedMode,
+        },
+      });
+    } else {
+      throw new Error("Operation failed");
+    }
+
+  } catch (error) {
+    console.error("Error processing user:", error);
+
+    if (error.data && error.data.errors) {
+      setServerErrors(error.data.errors);
+    } else if (error.data && error.data.message) {
+      setServerErrors([{ message: error.data.message }]);
+    } else {
+      setServerErrors([{
+        message:
+          "Failed to process booking. Please try again. / बुकिंग प्रसंस्करण विफल। कृपया पुनः प्रयास करें।",
+      }]);
+    }
+
+    // If update fails due to user not found, clear and retry
+    if (error.status === 404 && userId) {
+      dispatch(clearStoredUserData());
+      formik.handleSubmit();
+    }
+
+  } finally {
+    setSubmitting(false);
+  }
+},
+
   });
+
+  // Add a function to start new session (manual reset)
+  const handleStartNewSession = () => {
+    dispatch(newSession());
+    formik.resetForm();
+    setSelectedMode(selectedType || "");
+    setServerErrors([]);
+  };
 
   const handlePhoneChange = (e) => {
     let val = e.target.value.replace(/\D/g, "");
@@ -172,8 +261,40 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
 
   const isLoading = isCreating || isUpdating || formik.isSubmitting;
 
+  // Show returning user message if data is pre-filled
+  const showWelcomeBack = userData && formik.values.name && formik.values.phone;
+
   return (
     <div className="w-full max-w-6xl mx-auto py-6 px-3 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        {showWelcomeBack && (
+          <div className="bg-linear-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl px-4 py-3 w-full sm:w-auto shadow-sm">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-green-800 font-medium">
+                {translations.returningUser}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {userId && (
+          <button
+            type="button"
+            onClick={handleStartNewSession}
+            className="flex items-center justify-center gap-2 px-4 py-3 text-sm bg-white rounded-xl hover:from-gray-100 hover:to-gray-50 transition-all duration-200 border border-gray-200 shadow-sm hover:shadow-md active:shadow-sm w-full sm:w-auto"
+            title="Start a fresh booking session"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>{translations.startNewBooking}</span>
+          </button>
+        )}
+      </div>
+
       <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 shadow-lg flex flex-col lg:flex-row overflow-hidden">
         <div className="w-full lg:w-[40%] border-b lg:border-b-0 lg:border-r border-gray-200 bg-white">
           <ServiceInfo textData={translations.serviceText} height="md:h-full" />
@@ -190,7 +311,7 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
           {serverErrors.length > 0 && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <h3 className="text-sm font-medium text-red-800 mb-2">
-                Please fix the following errors:
+                Please fix the following errors / कृपया निम्नलिखित त्रुटियों को ठीक करें:
               </h3>
               <ul className="text-xs text-red-700 list-disc list-inside">
                 {serverErrors.map((error, index) => (
@@ -212,11 +333,10 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
                 onChange={handleInputChange}
                 onBlur={formik.handleBlur}
                 disabled={isLoading}
-                className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${
-                  formik.touched.name && formik.errors.name
+                className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${formik.touched.name && formik.errors.name
                     ? "border-red-400 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
-                } ${isLoading ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  } ${isLoading ? "bg-gray-100 cursor-not-allowed" : ""}`}
                 placeholder={translations.enterFullName}
               />
               {formik.touched.name && formik.errors.name && (
@@ -232,9 +352,8 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
                 {translations.mobileNumber}
               </label>
               <div
-                className={`mt-1 flex items-center rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 ${
-                  isLoading ? "bg-gray-100" : ""
-                }`}
+                className={`mt-1 flex items-center rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 ${isLoading ? "bg-gray-100" : ""
+                  }`}
               >
                 <span className="px-3 sm:px-4 py-3 bg-gray-100 border-r text-gray-700 text-sm font-medium">
                   +91
@@ -269,11 +388,10 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
                 onChange={handleInputChange}
                 onBlur={formik.handleBlur}
                 disabled={isLoading}
-                className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${
-                  formik.touched.email && formik.errors.email
+                className={`mt-1 w-full rounded-lg border px-4 py-3 text-sm focus:ring-2 transition ${formik.touched.email && formik.errors.email
                     ? "border-red-400 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
-                } ${isLoading ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  } ${isLoading ? "bg-gray-100 cursor-not-allowed" : ""}`}
                 placeholder={translations.emailPlaceholder}
               />
               {formik.touched.email && formik.errors.email && (
@@ -293,11 +411,10 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
                   type="button"
                   onClick={() => handleModeSelection("Online")}
                   disabled={isLoading}
-                  className={`w-full sm:w-1/2 py-3 text-sm font-semibold transition border-b sm:border-b-0 sm:border-r border-gray-300 ${
-                    selectedMode === "Online"
+                  className={`w-full sm:w-1/2 py-3 text-sm font-semibold transition border-b sm:border-b-0 sm:border-r border-gray-300 ${selectedMode === "Online"
                       ? "bg-blue-600 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50"
-                  } ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}
+                    } ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}
                 >
                   {translations.online}
                 </button>
@@ -305,11 +422,10 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
                   type="button"
                   onClick={() => handleModeSelection("Offline")}
                   disabled={isLoading}
-                  className={`w-full sm:w-1/2 py-3 text-sm font-semibold transition ${
-                    selectedMode === "Offline"
+                  className={`w-full sm:w-1/2 py-3 text-sm font-semibold transition ${selectedMode === "Offline"
                       ? "bg-blue-600 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50"
-                  } ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}
+                    } ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}
                 >
                   {translations.offline}
                 </button>
@@ -324,14 +440,15 @@ const BookingDetailsForm = ({ selectedType, onSubmit }) => {
             <button
               type="submit"
               disabled={!selectedMode || isLoading}
-              className={`w-full py-3 rounded-lg text-white font-medium transition shadow-md mt-4 ${
-                !selectedMode || isLoading
+              className={`w-full py-3 rounded-lg text-white font-medium transition shadow-md mt-4 ${!selectedMode || isLoading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-blue-600 hover:bg-blue-700"
-              }`}
+                }`}
             >
               {isLoading
-                ? translations.creatingUser
+                ? userId && canReuseUser()
+                  ? translations.updatingUser
+                  : translations.creatingUser
                 : translations.continue}
             </button>
           </form>

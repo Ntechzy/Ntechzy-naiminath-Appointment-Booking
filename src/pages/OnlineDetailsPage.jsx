@@ -105,7 +105,7 @@ export default function OnlineDetailsPage() {
       <p className="text-xs text-gray-500">Support Email</p>
       <a
         href="mailto:nhmcagra@gmail.com"
-        className="font-semibold text-gray-900 hover:text-blue-700 break-words"
+        className="font-semibold text-gray-900 hover:text-blue-700 "
       >
         ✉️ nhmcagra@gmail.com
       </a>
