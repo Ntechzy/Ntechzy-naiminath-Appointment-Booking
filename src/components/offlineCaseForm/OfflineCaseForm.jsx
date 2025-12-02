@@ -31,8 +31,9 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
     initialValues,
     validationSchema: completeFormSchema,
     onSubmit: async (values) => {
+      console.log("here");
+      
       try {
-        // Prepare API payload using utility function
         const payload = formatOfflineAppointmentData(
           userId,
           appointmentData?.selectedSlot,
@@ -40,11 +41,11 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
         );
 
         const appointmentResult = await createOfflineAppointment(payload).unwrap();
-        const appointmentId = appointmentResult.data._id;
+        const appointmentId = appointmentResult.data.appointmentId;
         
         // Initiate payment
         await initiatePayment(appointmentId);
-        
+
       } catch (error) {
         console.error('Failed to submit appointment:', error);
         const errorMessage = error?.data?.message || error?.message || 'Failed to submit appointment. Please try again.';
@@ -90,7 +91,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
       formik.setTouched({ ...formik.touched, ...touchedFields });
       return; // Don't proceed if validation fails
     }
-    
+
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -113,10 +114,10 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
       currentStep: currentStep,
       language: language
     };
-    
+
     localStorage.setItem('essentialCaseFormData', JSON.stringify(formData));
     setIsSaved(true);
-    
+
     setTimeout(() => setIsSaved(false), 3000);
   };
 
@@ -149,11 +150,11 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
 
   const initiatePayment = async (appointmentId) => {
     try {
-      const orderResult = await createPaymentOrder({ 
-        appointmentId, 
+      const orderResult = await createPaymentOrder({
+        appointmentId,
         amount: 708 // ₹708 including GST
       }).unwrap();
-      
+
       openRazorpayCheckout(orderResult.data, appointmentId);
     } catch (error) {
       console.error('Payment order creation failed:', error);
@@ -169,7 +170,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
       name: "Naiminath Clinic",
       description: "Appointment Booking Fee",
       order_id: orderData.orderId,
-      handler: function(response) {
+      handler: function (response) {
         handlePaymentSuccess(response, appointmentId);
       },
       prefill: {
@@ -181,12 +182,12 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
         color: "#3399cc"
       },
       modal: {
-        ondismiss: function() {
+        ondismiss: function () {
           handlePaymentFailure(appointmentId, "Payment cancelled by user");
         }
       }
     };
-    
+
     const rzp = new window.Razorpay(options);
     rzp.open();
   };
@@ -199,18 +200,18 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
         razorpay_signature: paymentResponse.razorpay_signature,
         appointmentId
       }).unwrap();
-      
+
       setShowSuccessMessage(true);
       setInternalFormComplete(true);
-      
+
       if (onFormSubmit) {
         onFormSubmit(formik.values);
       }
-      
+
       if (onFormComplete) {
         onFormComplete(true);
       }
-      
+
       setTimeout(() => {
         if (onClose) {
           onClose();
@@ -228,7 +229,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
         appointmentId,
         error: errorMessage
       }).unwrap();
-      
+
       alert('Payment failed. Please try again.');
     } catch (error) {
       console.error('Error recording payment failure:', error);
@@ -238,7 +239,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Success Message */}
         {showSuccessMessage && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
@@ -271,7 +272,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
           </button>
         </div>
 
-        <StepIndicator 
+        <StepIndicator
           currentStep={currentStep}
           totalSteps={totalSteps}
           progressPercentage={progressPercentage}
@@ -310,10 +311,10 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
 
         <div className="bg-white shadow-lg rounded-lg p-6 md:p-8">
           <form onSubmit={formik.handleSubmit}>
-            
+
             {/* Step 1: Personal Background */}
             {currentStep === 1 && (
-              <Step1Background 
+              <Step1Background
                 formik={formik}
                 getFieldError={getFieldError}
                 language={language}
@@ -322,7 +323,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
 
             {/* Step 2: Medical History */}
             {currentStep === 2 && (
-              <Step2MedicalHistory 
+              <Step2MedicalHistory
                 formik={formik}
                 getFieldError={getFieldError}
                 language={language}
@@ -331,7 +332,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
 
             {/* Step 3: Current Symptoms */}
             {currentStep === 3 && (
-              <Step3Symptoms 
+              <Step3Symptoms
                 formik={formik}
                 getFieldError={getFieldError}
                 language={language}
@@ -340,7 +341,7 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
 
             {/* Step 4: Family Health History */}
             {currentStep === 4 && (
-              <Step4FamilyHistory 
+              <Step4FamilyHistory
                 formik={formik}
                 getFieldError={getFieldError}
                 language={language}
@@ -353,11 +354,10 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
                 type="button"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className={`px-6 py-3 rounded-md font-semibold transition ${
-                  currentStep === 1
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-600 hover:bg-gray-700 text-white'
-                }`}
+                className={`px-6 py-3 rounded-md font-semibold transition ${currentStep === 1
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-600 hover:bg-gray-700 text-white'
+                  }`}
               >
                 {t.common.previous}
               </button>
@@ -374,11 +374,10 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
                 <button
                   type="submit"
                   disabled={showSuccessMessage || isSubmitting}
-                  className={`px-8 py-3 font-bold rounded-md transition ${
-                    showSuccessMessage || isSubmitting
-                      ? 'bg-green-600 text-white cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
+                  className={`px-8 py-3 font-bold rounded-md transition ${showSuccessMessage || isSubmitting
+                    ? 'bg-green-600 text-white cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
                 >
                   {isSubmitting ? 'Submitting...' : showSuccessMessage ? t.common.submitted : t.common.submit}
                 </button>
