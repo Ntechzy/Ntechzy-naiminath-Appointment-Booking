@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import BackButton from "../components/BackButton";
 import { useCreateOnlineAppointmentMutation } from "../api/endpoints/appointments";
 import { useCreatePaymentOrderMutation, useVerifyPaymentMutation, useRecordPaymentFailureMutation } from "../store/api/paymentApi";
+import { toast } from "react-toastify";
 
 export default function OnlinePaymentPage() {
   const { state } = useLocation();
@@ -21,9 +22,9 @@ export default function OnlinePaymentPage() {
   const [recordPaymentFailure] = useRecordPaymentFailureMutation();
   const user = useSelector((state) => state.user);
   const userId = user?.userId || user?.userData?._id || user?.userData?.id;
- 
+
   useEffect(() => {
-    const baseAmount = consultationType === "first" ? 2000 : 1000;  
+    const baseAmount = consultationType === "first" ? 2000 : 1000;
 
     setAmount(baseAmount);
     setTax(0);
@@ -31,6 +32,13 @@ export default function OnlinePaymentPage() {
   }, [consultationType]);
 
   const handleSuccess = async () => {
+    if (!state?.formData) {
+      toast.error('Form data not found. Please go back and try again.');
+      return;
+    }
+
+    if (isProcessing) return;
+    setIsProcessing(true);
     try {
 
       console.log("here ");
@@ -49,13 +57,15 @@ export default function OnlinePaymentPage() {
 
       const appointmentResult = await createOnlineAppointment(appointmentData).unwrap();
 
-      const appointmentId = appointmentResult.data.appointmentId; 
+      const appointmentId = appointmentResult.data.appointmentId;
 
       await initiatePayment(appointmentId);
     } catch (error) {
       console.error('Failed to create appointment:', error);
       const errorMessage = error?.data?.message || error?.message || 'Failed to create appointment. Please try again.';
       alert(errorMessage);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -75,6 +85,11 @@ export default function OnlinePaymentPage() {
   };
 
   const openRazorpayCheckout = (orderData, appointmentId) => {
+    if (!window.Razorpay) {
+      console.error('Razorpay SDK not loaded');
+      toast.error('Payment system not available. Please refresh the page and try again.');
+      return;
+    }
     const options = {
       key: orderData.key,
       amount: orderData.amount,
