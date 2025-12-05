@@ -430,18 +430,12 @@ export default function ConfirmationPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+            <div className="mt-8 flex flex-col align-middle sm:flex-row gap-4">
               <button
                 onClick={handleBookAnother}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-medium"
               >
                 Book Another Appointment
-              </button>
-              <button
-                onClick={handleViewAppointment}
-                className="flex-1 px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
-              >
-                View Appointment Details
               </button>
             </div>
           </div>

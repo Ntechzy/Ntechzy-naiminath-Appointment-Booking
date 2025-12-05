@@ -14,15 +14,26 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
   const totalSteps = 4;
   const [isSaved, setIsSaved] = useState(false);
   const [internalFormComplete, setInternalFormComplete] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [language, setLanguage] = useState('en'); // 'en' or 'hi'
 
   const formik = useFormik({
     initialValues,
     validationSchema: completeFormSchema,
     onSubmit: async (values) => {
-      // Simply pass the form data back to parent
-      if (onFormSubmit) {
-        onFormSubmit(values);
+      try {
+        // Simply pass the form data back to parent
+        if (onFormSubmit) {
+          await onFormSubmit(values);
+        }
+        setShowSuccessMessage(true);
+        setInternalFormComplete(true);
+        
+        if (onFormComplete) {
+          onFormComplete(true);
+        }
+      } catch (error) {
+        console.error('Form submission failed:', error);
       }
     },
   });
@@ -97,13 +108,17 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
   const handleLoadProgress = () => {
     const savedData = localStorage.getItem('essentialCaseFormData');
     if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      formik.setValues(parsedData);
-      setCurrentStep(parsedData.currentStep || 1);
-      setLanguage(parsedData.language || 'en');
-      alert('Previous progress loaded successfully!');
+      try {
+        const parsedData = JSON.parse(savedData);
+        formik.setValues(parsedData);
+        setCurrentStep(parsedData.currentStep || 1);
+        setLanguage(parsedData.language || 'en');
+        alert(translations[language].common.loadSuccess);
+      } catch (error) {
+        alert(translations[language].common.loadError);
+      }
     } else {
-      alert('No saved progress found.');
+      alert(translations[language].common.noSavedData);
     }
   };
 
@@ -121,9 +136,62 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
     return touched && error ? error : null;
   };
 
+  // Add this to your translations object if not present
+  const customTranslations = {
+    en: {
+      success: {
+        title: "Form Submitted Successfully!",
+        message: "Thank you for submitting your information. We'll review it and get back to you soon."
+      },
+      common: {
+        loadSuccess: "Previous progress loaded successfully!",
+        loadError: "Failed to load saved data. Please try again.",
+        noSavedData: "No saved progress found.",
+        submitted: "Submitted",
+        submit: "Submit Form",
+        ...translations.en.common // Spread existing translations
+      }
+    },
+    hi: {
+      success: {
+        title: "फॉर्म सफलतापूर्वक जमा हो गया!",
+        message: "आपकी जानकारी जमा करने के लिए धन्यवाद। हम इसकी समीक्षा करेंगे और जल्द ही आपसे संपर्क करेंगे।"
+      },
+      common: {
+        loadSuccess: "पिछली प्रगति सफलतापूर्वक लोड हो गई!",
+        loadError: "सहेजे गए डेटा को लोड करने में विफल। कृपया पुनः प्रयास करें।",
+        noSavedData: "कोई सहेजी गई प्रगति नहीं मिली।",
+        submitted: "जमा किया गया",
+        submit: "फॉर्म जमा करें",
+        ...translations.hi.common // Spread existing translations
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">
+                  {t.success?.title || customTranslations[language].success.title}
+                </h3>
+                <p className="text-sm text-green-600 mt-1">
+                  {t.success?.message || customTranslations[language].success.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Language Toggle */}
         <div className="flex justify-between items-center mb-4">
@@ -237,13 +305,15 @@ const OfflineCaseForm = ({ onFormComplete, onFormSubmit, isFormComplete: externa
               ) : (
                 <button
                   type="submit"
-                  disabled={!isFormComplete}
-                  className={`px-8 py-3 font-bold rounded-md transition ${isFormComplete
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  disabled={!isFormComplete || showSuccessMessage}
+                  className={`px-8 py-3 font-bold rounded-md transition ${!isFormComplete
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : showSuccessMessage
+                    ? 'bg-green-600 text-white cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
                     }`}
                 >
-                  {t.common.completeForm}
+                  {showSuccessMessage ? t.common.submitted : t.common.submit}
                 </button>
               )}
             </div>
