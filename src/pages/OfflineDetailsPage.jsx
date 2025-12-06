@@ -41,15 +41,15 @@ export default function OfflineDetailsPage() {
       alert(translations.pleaseCompleteForm);
       return;
     }
-    
+
     console.log('OfflineDetailsPage - Navigating with formData:', formData);
     console.log('OfflineDetailsPage - Full state being passed:', { ...state, formData });
-    
-    navigate('/payment-offline', { 
-      state: { 
-        ...state, 
-        formData 
-      } 
+
+    navigate('/payment-offline', {
+      state: {
+        ...state,
+        formData
+      }
     });
   };
 
@@ -58,11 +58,11 @@ export default function OfflineDetailsPage() {
       <ConfirmToast
         message={translations.skipConfirmation}
         onConfirm={() => {
-          navigate('/payment-offline', { 
-            state: { 
-              ...state, 
-              formData: null 
-            } 
+          navigate('/payment-offline', {
+            state: {
+              ...state,
+              formData: null
+            }
           });
         }}
         onCancel={() => {
@@ -85,21 +85,23 @@ export default function OfflineDetailsPage() {
     console.log('OfflineDetailsPage - Form submitted with data:', submittedFormData);
     setFormData(submittedFormData);
     setIsFormComplete(true);
-    
+
     // Auto-navigate to payment page after form submission
     setTimeout(() => {
       console.log('OfflineDetailsPage - Auto-navigating to payment with formData:', submittedFormData);
-      navigate('/payment-offline', { 
-        state: { 
-          ...state, 
-          formData: submittedFormData 
-        } 
+      navigate('/payment-offline', {
+        state: {
+          ...state,
+          formData: submittedFormData
+        }
       });
     }, 1000); // Small delay to show success message
   };
 
   return (
+
     <div className="min-h-screen bg-linear-to-br from-[#e6e2ff] via-[#d8f0ff] to-[#7ddfff] py-4 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
       <div className="max-w-4xl mx-auto mb-6">
         <div className="flex items-center justify-between">
           <BackButton />
