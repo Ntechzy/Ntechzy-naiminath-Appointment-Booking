@@ -58,6 +58,16 @@ export default function OnlineDetailsPage() {
   const handleFormSubmit = (submittedFormData) => {
     setFormData(submittedFormData);
     setIsFormComplete(true);
+    
+    // Auto-navigate to payment page after form submission
+    setTimeout(() => {
+      navigate('/payment-online', { 
+        state: { 
+          ...state, 
+          formData: submittedFormData 
+        } 
+      });
+    }, 1000); // Small delay to show success message
   };
 
   return (

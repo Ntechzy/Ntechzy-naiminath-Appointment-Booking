@@ -131,13 +131,11 @@ export default function OnlinePaymentPage() {
           userId,
           date: null,
           time: null,
-          formData: {
-            ...state?.formData,
-            paymentDetails: {
-              patientType,
-              consultationType,
-              amount: total
-            }
+          formData: state?.formData,
+          paymentDetails: {
+            patientType,
+            consultationType,
+            amount: total
           }
         }
       }).unwrap();
