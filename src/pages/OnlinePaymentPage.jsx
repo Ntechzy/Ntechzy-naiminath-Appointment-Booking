@@ -3,12 +3,17 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import BackButton from "../components/BackButton";
 import { useCreateOnlineAppointmentMutation } from "../api/endpoints/appointments";
-import { useCreatePaymentOrderMutation, useVerifyPaymentMutation, useRecordPaymentFailureMutation } from "../store/api/paymentApi";
+import {
+  useCreatePaymentOrderMutation,
+  useVerifyPaymentMutation,
+  useRecordPaymentFailureMutation,
+} from "../store/api/paymentApi";
 import { toast } from "react-toastify";
 
 export default function OnlinePaymentPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
   const [patientType, setPatientType] = useState("indian");
@@ -16,51 +21,40 @@ export default function OnlinePaymentPage() {
   const [amount, setAmount] = useState(0);
   const [tax, setTax] = useState(0);
   const [total, setTotal] = useState(0);
+
   const [createOnlineAppointment] = useCreateOnlineAppointmentMutation();
   const [createPaymentOrder] = useCreatePaymentOrderMutation();
   const [verifyPayment] = useVerifyPaymentMutation();
   const [recordPaymentFailure] = useRecordPaymentFailureMutation();
-  const user = useSelector((state) => state.user);
-  const userId = user?.userId || user?.userData?._id || user?.userData?.id;
 
+  const user = useSelector((state) => state.user);
+  const userId =
+    user?.userId || user?.userData?._id || user?.userData?.id;
+
+  // ✅ UPDATED AMOUNT LOGIC (ONLY CHANGE)
   useEffect(() => {
-    const baseAmount = consultationType === "first" ? 2000 : 1000;
+    let baseAmount = 0;
+
+    if (patientType === "indian") {
+      baseAmount = consultationType === "first" ? 2000 : 1000;
+    } else {
+      baseAmount = consultationType === "first" ? 10515 : 5258;
+    }
 
     setAmount(baseAmount);
     setTax(0);
     setTotal(baseAmount);
-  }, [consultationType]);
+  }, [patientType, consultationType]);
 
   const handleSuccess = async () => {
-
-
     if (isProcessing) return;
     setIsProcessing(true);
+
     try {
-
-      console.log("here ");
-
-      const appointmentData = {
-        userId,
-        formData: {
-          ...state?.formData,
-          paymentDetails: {
-            patientType,
-            consultationType,
-            amount: total
-          }
-        }
-      };
-
-      // const appointmentResult = await createOnlineAppointment(appointmentData).unwrap();
-
-      // const appointmentId = appointmentResult.data.appointmentId;
-
       await initiatePayment(userId);
     } catch (error) {
-      console.error('Failed to create appointment:', error);
-      const errorMessage = error?.data?.message || error?.message || 'Failed to create appointment. Please try again.';
-      alert(errorMessage);
+      console.error("Failed to create appointment:", error);
+      alert("Failed to create appointment. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -71,22 +65,24 @@ export default function OnlinePaymentPage() {
       const orderResult = await createPaymentOrder({
         userId,
         amount: total,
-        appointmentType: "online"
+        appointmentType: "online",
       }).unwrap();
 
       openRazorpayCheckout(orderResult.data);
     } catch (error) {
-      console.error('Payment order creation failed:', error);
-      alert('Failed to initiate payment. Please try again.');
+      console.error("Payment order creation failed:", error);
+      alert("Failed to initiate payment. Please try again.");
     }
   };
 
   const openRazorpayCheckout = (orderData) => {
     if (!window.Razorpay) {
-      console.error('Razorpay SDK not loaded');
-      toast.error('Payment system not available. Please refresh the page and try again.');
+      toast.error(
+        "Payment system not available. Please refresh the page and try again."
+      );
       return;
     }
+
     const options = {
       key: orderData.key,
       amount: orderData.amount,
@@ -95,29 +91,28 @@ export default function OnlinePaymentPage() {
       description: "Online Consultation Fee",
       order_id: orderData.orderId,
       handler: function (response) {
-        let paymentId = orderData.paymentId
-        handlePaymentSuccess(response, paymentId);
+        handlePaymentSuccess(response);
       },
       prefill: {
         name: user?.userData?.name || "Patient",
         email: user?.userData?.email || "",
-        contact: user?.userData?.phone || ""
+        contact: user?.userData?.phone || "",
       },
       theme: {
-        color: "#3399cc"
+        color: "#3399cc",
       },
       modal: {
         ondismiss: function () {
           handlePaymentFailure(null, "Payment cancelled by user");
-        }
-      }
+        },
+      },
     };
 
     const rzp = new window.Razorpay(options);
     rzp.open();
   };
 
-  const handlePaymentSuccess = async (paymentResponse, paymentId) => {
+  const handlePaymentSuccess = async (paymentResponse) => {
     setIsProcessing(true);
 
     try {
@@ -125,7 +120,6 @@ export default function OnlinePaymentPage() {
         razorpay_order_id: paymentResponse.razorpay_order_id,
         razorpay_payment_id: paymentResponse.razorpay_payment_id,
         razorpay_signature: paymentResponse.razorpay_signature,
-        paymentId: paymentResponse.razorpay_payment_id,
         appointmentType: "online",
         payload: {
           userId,
@@ -135,24 +129,23 @@ export default function OnlinePaymentPage() {
           paymentDetails: {
             patientType,
             consultationType,
-            amount: total
-          }
-        }
+            amount: total,
+          },
+        },
       }).unwrap();
 
-      // Navigate to confirmation page after successful verification
-      navigate('/onlineconfirmation', {
+      navigate("/onlineconfirmation", {
         state: {
           amount: total,
           currency: "₹",
           patientType,
-          consultationType
-        }
+          consultationType,
+        },
       });
     } catch (error) {
-      console.error('Payment verification failed:', error);
+      console.error("Payment verification failed:", error);
       setIsProcessing(false);
-      alert('Payment verification failed. Please contact support.');
+      alert("Payment verification failed. Please contact support.");
     }
   };
 
@@ -160,12 +153,12 @@ export default function OnlinePaymentPage() {
     try {
       await recordPaymentFailure({
         appointmentId,
-        error: errorMessage
+        error: errorMessage,
       }).unwrap();
 
-      alert('Payment failed. Please try again.');
+      alert("Payment failed. Please try again.");
     } catch (error) {
-      console.error('Error recording payment failure:', error);
+      console.error("Error recording payment failure:", error);
     }
   };
 
@@ -181,17 +174,12 @@ export default function OnlinePaymentPage() {
           <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
           <div className="w-16 h-16 border-4 border-blue-600 rounded-full absolute top-0 left-0 animate-spin border-t-transparent"></div>
         </div>
-
         <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-2">
           Processing Payment
         </h3>
         <p className="text-gray-600 text-center text-sm">
           Please wait while we verify your payment...
         </p>
-
-        <div className="mt-4 text-xs text-gray-500">
-          This may take a few seconds
-        </div>
       </div>
     </div>
   );
