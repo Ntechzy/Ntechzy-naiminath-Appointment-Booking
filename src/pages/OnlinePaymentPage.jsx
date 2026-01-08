@@ -91,7 +91,8 @@ export default function OnlinePaymentPage() {
       description: "Online Consultation Fee",
       order_id: orderData.orderId,
       handler: function (response) {
-        handlePaymentSuccess(response);
+        let paymentId = orderData.paymentId
+        handlePaymentSuccess(response, paymentId);
       },
       prefill: {
         name: user?.userData?.name || "Patient",
@@ -112,7 +113,7 @@ export default function OnlinePaymentPage() {
     rzp.open();
   };
 
-  const handlePaymentSuccess = async (paymentResponse) => {
+  const handlePaymentSuccess = async (paymentResponse, paymentId) => {
     setIsProcessing(true);
 
     try {
@@ -120,6 +121,7 @@ export default function OnlinePaymentPage() {
         razorpay_order_id: paymentResponse.razorpay_order_id,
         razorpay_payment_id: paymentResponse.razorpay_payment_id,
         razorpay_signature: paymentResponse.razorpay_signature,
+        paymentId,
         appointmentType: "online",
         payload: {
           userId,
