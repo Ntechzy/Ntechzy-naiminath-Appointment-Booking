@@ -19,7 +19,8 @@ export default function OnlinePaymentPage() {
   const [patientType, setPatientType] = useState("indian");
   const [consultationType, setConsultationType] = useState("first");
   const [amount, setAmount] = useState(0);
-  const [tax, setTax] = useState(0);
+  const [razorpayFee, setRazorpayFee] = useState(0);
+  const [gst, setGst] = useState(0);
   const [total, setTotal] = useState(0);
   const [currency, setCurrency] = useState("INR");
 
@@ -45,10 +46,15 @@ export default function OnlinePaymentPage() {
       baseAmount = consultationType === "first" ? 125 : 75;
     }
 
+    const razorpayFeeAmount = Math.round(baseAmount * 0.02);
+    const gstOnFee = Math.round(razorpayFeeAmount * 0.18);
+    const totalAmount = baseAmount + razorpayFeeAmount + gstOnFee;
+
     setCurrency(selectedCurrency);
     setAmount(baseAmount);
-    setTax(0);
-    setTotal(baseAmount);
+    setRazorpayFee(razorpayFeeAmount);
+    setGst(gstOnFee);
+    setTotal(totalAmount);
   }, [patientType, consultationType]);
 
 
@@ -67,7 +73,7 @@ export default function OnlinePaymentPage() {
   };
 
   const initiatePayment = async (userId) => {
-    try { 
+    try {
 
       const orderResult = await createPaymentOrder({
         userId,
@@ -99,6 +105,7 @@ export default function OnlinePaymentPage() {
       description: "Online Consultation Fee",
       order_id: orderData.orderId,
       handler: function (response) {
+
         let paymentId = orderData.paymentId
         handlePaymentSuccess(response, paymentId);
       },
@@ -119,10 +126,13 @@ export default function OnlinePaymentPage() {
 
     const rzp = new window.Razorpay(options);
     rzp.open();
+    console.log("okoko");
+
   };
 
   const handlePaymentSuccess = async (paymentResponse, paymentId) => {
     setIsProcessing(true);
+    console.log(paymentResponse);
 
     try {
       await verifyPayment({
@@ -278,7 +288,18 @@ export default function OnlinePaymentPage() {
                   <span className="font-medium text-gray-900">
                     {currency === "INR" ? "₹" : "€"}{amount}
                   </span>
-
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Razorpay Fee (2%)</span>
+                  <span className="font-medium text-gray-900">
+                    {currency === "INR" ? "₹" : "€"}{razorpayFee}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">GST (18% on fee)</span>
+                  <span className="font-medium text-gray-900">
+                    {currency === "INR" ? "₹" : "€"}{gst}
+                  </span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-gray-200">
                   <span className="text-lg font-semibold text-gray-900">
@@ -287,7 +308,6 @@ export default function OnlinePaymentPage() {
                   <span className="text-lg font-bold text-blue-600">
                     {currency === "INR" ? "₹" : "€"}{total}
                   </span>
-
                 </div>
               </div>
             </div>
